@@ -1,10 +1,11 @@
-FROM debian:bullseye-slim as builder
-#FROM balenalib/raspberrypi3-ubuntu-python:3.6.9 as builder
+FROM debian:stretch-slim as builder
 RUN apt update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata \
     && ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime \
     && dpkg-reconfigure --frontend noninteractive tzdata
-RUN apt install -y --no-install-recommends \
+RUN apt install -y \
+    build-essential \
+    git \
     libgnustep-base-dev \
     libmariadbclient-dev-compat \
     libxml2-dev \
@@ -15,45 +16,30 @@ RUN apt install -y --no-install-recommends \
     libsodium-dev \
     libzip-dev \
     libytnef0-dev \
-    git
+    gnutls-dev \
+    libssl-dev
 WORKDIR /usr/src/app
-# Compile SOPE and SOGo
-# Configuration SOPE:
-#   FHS:    install in FHS root
-#   debug:  yes
-#   strip:  yes
-#   prefix:     /usr/local/
-#   frameworks:
-#   gstep:      /usr/share/GNUstep/Makefiles
-#   config:     /usr/src/app/sope/config.make
-#   script:     /usr/share/GNUstep/Makefiles/GNUstep.sh
-# Configuration SOGo:
-#   debug:  yes
-#   strip:  no
-#   saml2 support:  no
-#   mfa support:  no
-#   argon2 support:  yes
-#   ldap-based configuration:  no
-#   prefix: /usr/Local
-#   gstep:  /usr/share/GNUstep/Makefiles
-#   config: /usr/src/app/sogo/config.make
-#   script: /usr/share/GNUstep/Makefiles/GNUstep.sh
-#RUN git clone https://github.com/inverse-inc/sope.git \
-#    && cd sope && ./configure && make && make install && cd ..
-#RUN git clone https://github.com/inverse-inc/sogo.git \
-#    && cd sogo && ./configure && make && make install && cd ..
-#RUN ldconfig --verbose \
-#    && echo "/usr/local/lib/sogo" > /etc/ld.so.config.d/sogo.conf
+RUN git clone https://github.com/inverse-inc/sope.git \
+    && cd sope && ./configure --with-gnustep --disable-debug --enable-strip && make && make install && cd ..
+RUN git clone https://github.com/inverse-inc/sogo.git \
+    && cd sogo && ./configure --disable-debug --enable-strip && make && make install && cd ..
 
-#cp ~/src/sogo.service /lib/systemd/system/
-#chown root:root /lib/systemd/system/sogo.service
-#chmod 644 /lib/systemd/system/sogo.service
-#rm /etc/systemd/system/sogo.service
-#systemctl enable sogo
-#systemctl start sogo
 
-#COPY requirements.txt ./
-#RUN pip install --no-cache-dir -r requirements.txt
-#COPY . .
-ENTRYPOINT ["/bin/bash"]
-#CMD [ "python", "./your-daemon-or-script.py" ]
+FROM debian:stretch-slim
+RUN apt update \
+    && apt install -y gnustep-base-runtime libmemcached-tools libzip4 libytnef0 libsodium18 libldap-2.4.2 libcurl3 \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /usr/local /usr/local
+COPY config-sogo/sogo.conf /etc/sogo/
+COPY sogo-backup.sh /usr/local/share/doc/sogo/
+COPY sogo.cron /etc/cron.d/
+COPY sogod.sh /usr/local/bin/
+RUN echo -e "# SOGo libraries\n/usr/local/lib/sogo" > /etc/ld.so.conf.d/sogo.conf \
+    && ldconfig --verbose
+RUN groupadd -f -r sogo \
+    && useradd -d /var/lib/sogo -g sogo -c "SOGo daemon" -s /usr/sbin/nologin -r -g sogo sogo \
+    && for dir in lib log run spool; do install -m 750 -o sogo -g sogo -d /var/$dir/sogo; done
+EXPOSE 80
+WORKDIR /var/lib/sogo
+USER sogo
+ENTRYPOINT ["/usr/local/bin/sogod.sh"]

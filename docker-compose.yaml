@@ -1,0 +1,27 @@
+version: "2.1"
+services:
+  sogo:
+    image: japoch/docker-sogo-raspbian:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./config-sogo:/etc/sogo:ro
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: lscr.io/linuxserver/mariadb:10.6.12
+    ports:
+      - "3306:3306"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - MYSQL_ROOT_PASSWORD="ROOT_ACCESS_PASSWORD"
+      - MYSQL_DATABASE="USER_DB_NAME"
+      - MYSQL_USER="MYSQL_USER"
+      - MYSQL_PASSWORD="DATABASE_PASSWORD"
+    volumes:
+      - ./db-root:/config
+    restart: unless-stopped
