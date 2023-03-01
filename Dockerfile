@@ -27,19 +27,29 @@ RUN git clone https://github.com/inverse-inc/sogo.git \
 
 FROM debian:stretch-slim
 RUN apt update \
-    && apt install -y gnustep-base-runtime libmemcached-tools libzip4 libytnef0 libsodium18 libldap-2.4.2 libcurl3 \
+    && apt install -y --no-install-recommends \
+    gnustep-base-runtime \
+    libmemcached-tools libzip4 libytnef0 libsodium18 libldap-2.4.2 libcurl3 libmariadbclient18 \
+    nginx \
+    memcached \
+    sudo \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local /usr/local
-COPY config-sogo/sogo.conf /etc/sogo/
-COPY sogo-backup.sh /usr/local/share/doc/sogo/
-COPY sogo.cron /etc/cron.d/
-COPY sogod.sh /usr/local/bin/
+COPY sogo-conf/sogo.conf /etc/sogo/
+COPY artifacts/sogo-backup.sh /usr/local/share/doc/sogo/
+COPY artifacts/sogo.cron /etc/cron.d/
+COPY artifacts/sogod.sh /usr/local/bin/
+COPY artifacts/sogo-nginx.conf /etc/nginx/sites-enabled/
+RUN rm /etc/nginx/sites-enabled/default
+
 RUN echo -e "# SOGo libraries\n/usr/local/lib/sogo" > /etc/ld.so.conf.d/sogo.conf \
     && ldconfig --verbose
 RUN groupadd -f -r sogo \
     && useradd -d /var/lib/sogo -g sogo -c "SOGo daemon" -s /usr/sbin/nologin -r -g sogo sogo \
     && for dir in lib log run spool; do install -m 750 -o sogo -g sogo -d /var/$dir/sogo; done
+
 EXPOSE 80
 WORKDIR /var/lib/sogo
-USER sogo
+USER root
 ENTRYPOINT ["/usr/local/bin/sogod.sh"]

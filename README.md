@@ -18,6 +18,8 @@ docker buildx build --platform linux/amd64,linux/arm/v7 -t japoch/docker-sogo-ra
 
 [Database](https://hub.docker.com/r/linuxserver/mariadb)
 
+[phpMyAdmin](https://hub.docker.com/r/linuxserver/phpmyadmin)
+
 Systems:
 - linux/amd64 
 - linux/arm/v7

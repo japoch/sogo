@@ -1,1 +1,9 @@
-*.log
+# database
+db-root/*
+!db-root/initdb.d
+
+# phpmyadmin
+phpmyadmin-root/*
+
+# keep this file
+!**/.gitkeep
