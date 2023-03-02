@@ -1,43 +1,66 @@
 version: "2.1"
 services:
   sogo:
-    image: japoch/docker-sogo-raspbian:latest
+    image: japoch/sogo:latest
     ports:
-      - "8080:80"
+    - "8080:80"
     volumes:
-      - ./sogo-conf:/etc/sogo:ro
-      - ./nginx-root:/var/www
+    - ./sogo-conf:/etc/sogo:ro
+    - ./nginx-root:/var/www
     restart: unless-stopped
     depends_on:
-      - db
+    - db
+    - mail
 
   db:
     image: linuxserver/mariadb:10.6.12
     ports:
-      - "3306:3306"
+    - "3306:3306"
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=sogo
-      - MYSQL_USER=sogo
-      - MYSQL_PASSWORD=password
+    - PUID=1000
+    - PGID=1000
+    - TZ=Etc/UTC
+    - MYSQL_ROOT_PASSWORD=password
+    - MYSQL_DATABASE=sogo
+    - MYSQL_USER=sogo
+    - MYSQL_PASSWORD=password
     volumes:
-      - ./db-root:/config
+    - ./db-root:/config
     restart: unless-stopped
+
+  mail:
+    image: instantlinux/dovecot:2.3.20-r6
+    ports:
+    - ${PORT_DOVECOT_SMTP:-25}:25
+    - ${PORT_DOVECOT_IMAPD:-143}:143
+    - ${PORT_DOVECOT_IMAPS:-993}:993
+    environment:
+    - TZ=Etc/UTC
+    - SSL_DH=dovekot-key.pem
+    volumes:
+    - ./dovecot-root/etc/:/etc/dovecot/conf.local:ro
+    - ./dovecot-root/postfix/etc/:/etc/postfix/postfix.d:ro
+    - ./dovecot-root/certs/dovecot_cert:/etc/ssl/certs/dovecot_cert:ro
+    - inbox:/var/spool/mail
+    - spool:/var/spool/postfix
+    - webmail:/home
 
   phpmyadmin:
     image: linuxserver/phpmyadmin:5.2.1
     ports:
-      - "8081:80"
+    - "8081:80"
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-      - PMA_ARBITRARY=1
+    - PUID=1000
+    - PGID=1000
+    - TZ=Etc/UTC
+    - PMA_ARBITRARY=1
     volumes:
-      - ./phpmyadmin-root:/config
+    - ./phpmyadmin-root:/config
     restart: unless-stopped
     depends_on:
-      - db
+    - db
+
+volumes:
+  inbox:
+  spool:
+  webmail:
