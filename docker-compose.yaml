@@ -1,7 +1,7 @@
-version: "2.1"
+version: "3.8"
 services:
   sogo:
-    image: japoch/sogo:latest
+    image: japoch/sogo:0.0.1
     ports:
     - "8080:80"
     volumes:
@@ -36,14 +36,18 @@ services:
     - ${PORT_DOVECOT_IMAPS:-993}:993
     environment:
     - TZ=Etc/UTC
-    - SSL_DH=dovekot-key.pem
+    #- SSL_DH=dovecot-key.pem
     volumes:
     - ./dovecot-root/etc/:/etc/dovecot/conf.local:ro
     - ./dovecot-root/postfix/etc/:/etc/postfix/postfix.d:ro
-    - ./dovecot-root/certs/dovecot_cert:/etc/ssl/certs/dovecot_cert:ro
+    - ./dovecot-root/certs/dovecot_cert:/run/secrets:ro
     - inbox:/var/spool/mail
     - spool:/var/spool/postfix
     - webmail:/home
+    #entrypoint: "ls -la /etc/dovecot/"
+    restart: unless-stopped
+    depends_on:
+    - db
 
   phpmyadmin:
     image: linuxserver/phpmyadmin:5.2.1

@@ -13,10 +13,13 @@ Run the Docker container with
 
     docker run --rm -name sogo japoch/sogo:latest
 
-
 We provide a full functional setup with Docker-Compose.
 
     docker-compose up
+
+### Generate self-signed SSL key for Dovecot
+openssl req -newkey rsa:4096 -sha512 -x509 -days 365 -nodes -keyout dovecot-root/certs/dovecot_cert/smtp.key -out dovecot-root/certs/dovecot_cert/smtp-key.pem
+
 
 ### Database
 

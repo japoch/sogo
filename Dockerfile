@@ -26,9 +26,10 @@ RUN git clone https://github.com/inverse-inc/sogo.git \
 
 
 FROM debian:stretch-slim
-LABEL org.opencontainers.image.authors="japoch" \
-      version="0.0.1" \
-      description="SOGo is fully supported and trusted groupware server."
+LABEL maintainer="japoch"
+LABEL org.opencontainers.image.authors="japoch"
+LABEL version="0.0.1"
+LABEL description="SOGo is fully supported and trusted groupware server."
 RUN apt update \
     && apt install -y --no-install-recommends \
     gnustep-base-runtime \
