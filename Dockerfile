@@ -49,7 +49,7 @@ RUN groupadd -f -r sogo \
     && useradd -d /var/lib/sogo -g sogo -c "SOGo daemon" -s /usr/sbin/nologin -r -g sogo sogo \
     && for dir in lib log run spool; do install -m 750 -o sogo -g sogo -d /var/$dir/sogo; done
 
-EXPOSE 80
+EXPOSE 80 443 20000
 WORKDIR /var/lib/sogo
 USER root
 ENTRYPOINT ["/usr/local/bin/sogod.sh"]
