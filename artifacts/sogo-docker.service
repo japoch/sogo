@@ -1,0 +1,19 @@
+[Unit]
+Description=SOGo is a groupware server
+Documentation=https://sogo.nu/files/docs/SOGoInstallationGuide.html
+After=network.target
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/pi/ws/gh-sogo
+Environment=COMPOSE_HTTP_TIMEOUT=600
+ExecStart=/usr/bin/env /usr/bin/docker-compose up -d sogo
+ExecStop=/usr/bin/env /usr/bin/docker-compose stop
+StandardOutput=syslog
+RemainAfterExit=yes
+User=pi
+
+[Install]
+WantedBy=multi-user.target

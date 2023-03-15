@@ -9,4 +9,4 @@ echo "Starting nginx."
 /etc/init.d/memcached start
 
 # Run SOGo in foreground
-exec sudo -u sogo /usr/local/sbin/sogod -WONoDetach YES -WOWorkersCount 1 -WOPidFile /var/run/sogo/sogo.pid -WOLogFile -
+exec sudo -u sogo /usr/local/sbin/sogod -WONoDetach YES -WOPidFile /var/run/sogo/sogo.pid -WOLogFile -

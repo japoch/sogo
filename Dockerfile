@@ -44,7 +44,7 @@ COPY sogo-conf/sogo.conf /etc/sogo/
 COPY artifacts/sogo-backup.sh /usr/local/share/doc/sogo/
 COPY artifacts/sogo.cron /etc/cron.d/
 COPY artifacts/sogod.sh /usr/local/bin/
-COPY artifacts/sogo-nginx.conf /etc/nginx/sites-enabled/
+COPY nginx-conf/sites-enabled/sogo-nginx.conf /etc/nginx/sites-enabled/
 RUN rm /etc/nginx/sites-enabled/default
 
 RUN echo -e "# SOGo libraries\n/usr/local/lib/sogo" > /etc/ld.so.conf.d/sogo.conf \

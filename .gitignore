@@ -7,3 +7,12 @@ phpmyadmin-root/*
 
 # keep this file
 !**/.gitkeep
+
+# backup
+backup/*
+
+# Images we use
+images/*
+
+# Develop folders
+reverse-proxy/*
