@@ -22,6 +22,11 @@ Additional you run the compose file as an systemd service.
     cp ./artifacts/sogo-docker.service /etc/systemd/system
     systemctl start sogo-docker.service && systemctl enable sogo-docker.service
 
+    # and check logs with
+    docker-compose logs -f
+    # and with
+    journalctl -u sogo-docker.service -f
+
 ### Generate self-signed SSL key for Dovecot
 openssl req -newkey rsa:4096 -sha512 -x509 -days 365 -nodes -keyout dovecot-root/certs/dovecot_cert/smtp.key -out dovecot-root/certs/dovecot_cert/smtp-key.pem
 
