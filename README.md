@@ -13,9 +13,9 @@ Run the Docker container with
 
     docker run --rm -name sogo japoch/sogo:latest
 
-We provide a full functional setup with Docker-Compose.
+We provide a full functional setup with docker compose.
 
-    docker-compose up -d
+    docker compose up -d
 
 Additional you run the compose file as an systemd service.
 
@@ -23,7 +23,7 @@ Additional you run the compose file as an systemd service.
     systemctl start sogo-docker.service && systemctl enable sogo-docker.service
 
     # and check logs with
-    docker-compose logs -f
+    docker compose logs -f
     # and with
     journalctl -u sogo-docker.service -f
 
@@ -83,17 +83,17 @@ sogo_name='User Name'
 sogo_fqhn='localhost'
 ```
 
-View the user table with `docker-compose exec db mysql -u sogo -ppassword -D sogo -e "SELECT * FROM sogo_view;"`
+View the user table with `docker compose exec db mysql -u sogo -ppassword -D sogo -e "SELECT * FROM sogo_view;"`
 
-Insert a new user into SOGo with `docker-compose exec db mysql -u sogo -ppassword -D sogo -e "INSERT INTO sogo_view VALUES('$sogo_user', '$sogo_user', MD5('$sogo_pass'), '$sogo_name', '$sogo_user@$sogo_fqhn');"`
+Insert a new user into SOGo with `docker compose exec db mysql -u sogo -ppassword -D sogo -e "INSERT INTO sogo_view VALUES('$sogo_user', '$sogo_user', MD5('$sogo_pass'), '$sogo_name', '$sogo_user@$sogo_fqhn');"`
 
-Update password with `docker-compose exec db mysql -u sogo -ppassword -D sogo -e "UPDATE sogo_view SET c_password=MD5('$sogo_pass') WHERE c_uid='$sogo_user';"`
+Update password with `docker compose exec db mysql -u sogo -ppassword -D sogo -e "UPDATE sogo_view SET c_password=MD5('$sogo_pass') WHERE c_uid='$sogo_user';"`
 
-Remove an user from SOGo with `docker-compose exec db mysql -u sogo -ppassword -D sogo -e "DELETE FROM sogo_view WHERE c_uid='$sogo_user'"`
+Remove an user from SOGo with `docker compose exec db mysql -u sogo -ppassword -D sogo -e "DELETE FROM sogo_view WHERE c_uid='$sogo_user'"`
 
 ### Backup / Restore
 
-Preparation: Start an Bash shell from inside SOGo's Docker container with `docker-compose exec sogo bash`.
+Preparation: Start an Bash shell from inside SOGo's Docker container with `docker compose exec sogo bash`.
 
 Create backup of all or of one single user with `sogo-tool backup /mnt/backup [ALL | username]`.
 

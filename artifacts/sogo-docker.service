@@ -7,13 +7,13 @@ After=docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/pi/ws/gh-sogo
+WorkingDirectory=/home/sogo/ws/gh-sogo
 Environment=COMPOSE_HTTP_TIMEOUT=600
-ExecStart=/usr/bin/env /usr/bin/docker-compose up -d sogo
-ExecStop=/usr/bin/env /usr/bin/docker-compose stop
+ExecStart=/usr/bin/env /usr/bin/docker compose up -d sogo
+ExecStop=/usr/bin/env /usr/bin/docker compose stop
 StandardOutput=syslog
 RemainAfterExit=yes
-User=pi
+User=sogo
 
 [Install]
 WantedBy=multi-user.target
