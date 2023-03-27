@@ -144,10 +144,10 @@ CREATE TABLE sogo_quick_contact (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE sogo_sessions_folder (
-	c_id           varchar(255) NOT NULL,
-	c_value        varchar(255) NOT NULL,
-	c_creationdate int(11)      NOT NULL,
-	c_lastseen     int(11)      NOT NULL,
+	c_id           varchar(255)  NOT NULL,
+	c_value        varchar(4096) NOT NULL,
+	c_creationdate int(11)       NOT NULL,
+	c_lastseen     int(11)       NOT NULL,
 	PRIMARY KEY (c_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC;
 

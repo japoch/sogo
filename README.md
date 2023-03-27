@@ -104,3 +104,22 @@ Restore parameters (signature, filters ....) with `sogo-tool restore -p /mnt/bac
 Restore the folders (calenders and contacts) of one user with `sogo-tool restore -f ALL /mnt/backup username`.
 
 or use SOGos browser import/export function.
+
+## Known Bugs
+
+### Data too long for column 'c_value'
+Error message
+
+    [ERROR] <0x0x55b6f2205810[GCSSessionsFolder]> -[GCSSessionsFolder writeRecordForEntryWithID:value:creationDate:lastSeenDate:]: cannot write record: <MySQL4Exception: 0x55b6f23655f0> NAME:ExecutionFailed REASON:Data too long for column 'c_value' at row 1
+
+Bug tracking
+
+    https://bugs.sogo.nu//view.php?id=5491
+    The cookie is now much bigger than before. Just bellow 4096 bytes, to accommodate longer passwords.
+
+Solution
+
+```sql
+-- Enlarging the column c_value from 255 to 4096.
+alter table sogo_sessions_folder modify c_value varchar(4096) not null;
+```

@@ -19,9 +19,10 @@ RUN apt install -y \
     gnutls-dev \
     libssl-dev
 WORKDIR /usr/src/app
-RUN git clone https://github.com/inverse-inc/sope.git \
+COPY versions.yaml .
+RUN git clone --depth 1 --branch $(grep "sope_git_tag" versions.yaml | cut -d" " -f2) https://github.com/inverse-inc/sope.git \
     && cd sope && ./configure --with-gnustep --disable-debug --enable-strip && make && make install && cd ..
-RUN git clone https://github.com/inverse-inc/sogo.git \
+RUN git clone --depth 1 --branch $(grep "sogo_git_tag" versions.yaml | cut -d" " -f2) https://github.com/inverse-inc/sogo.git \
     && cd sogo && ./configure --disable-debug --enable-strip && make && make install && cd ..
 
 
