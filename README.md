@@ -5,7 +5,7 @@
 
 [SOGo](http://www.sogo.nu) is fully supported and trusted groupware server with a focus on scalability and open standards. SOGo is released under the GNU GPL/LGPL v2 and above. 
 
-This Dockerfile packages SOGo compiled from the sources from [Alinto/sogo](https://github.com/Alinto/sogo) together with [NGINX](https://www.nginx.com/) and [memcached](https://memcached.org/).
+This Dockerfile packages SOGo compiled from the sources from [Alinto/SOGo](https://github.com/Alinto/sogo) together with [Alinto/SOPE](https://github.com/Alinto/sope),[NGINX](https://www.nginx.com/) and [memcached](https://memcached.org/).
 
 ## Setup
 
@@ -69,7 +69,7 @@ Docker >19.03.0 Beta 3 with BuildX plugin with the full support of the features 
 Build the image for linux/amd64 and linux/arm/v7.
 
     docker buildx create --name testbuilder --use
-    docker buildx build --platform linux/amd64,linux/arm/v7 -t japoch/sogo:latest -t japoch/sogo:$(<VERSION) --push .
+    docker buildx build --build-arg VERSION=$(cat VERSION) --platform linux/amd64,linux/arm/v7 -t japoch/sogo:latest -t japoch/sogo:$(<VERSION) --push .
 
 ## Usage
 

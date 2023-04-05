@@ -27,9 +27,11 @@ RUN git clone --depth 1 --branch $(grep "sogo_git_tag" versions.yaml | cut -d" "
 
 
 FROM debian:stretch-slim
+ARG VERSION
+RUN test -n "$VERSION"
 LABEL maintainer="japoch"
 LABEL org.opencontainers.image.authors="japoch"
-LABEL version="0.0.1"
+LABEL version=${VERSION}
 LABEL description="SOGo is fully supported and trusted groupware server."
 RUN apt update \
     && apt install -y --no-install-recommends \
