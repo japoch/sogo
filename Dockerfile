@@ -7,7 +7,7 @@ RUN apt install -y \
     build-essential \
     git \
     libgnustep-base-dev \
-    libmariadb-dev \
+    libmariadb-dev-compat \
     libxml2-dev \
     libldap2-dev \
     libpq-dev \
@@ -21,7 +21,7 @@ RUN apt install -y \
 WORKDIR /usr/src/app
 COPY versions.yaml .
 RUN git clone --depth 1 --branch $(grep "sope_git_tag" versions.yaml | cut -d" " -f2) https://github.com/inverse-inc/sope.git \
-    && cd sope && ./configure --with-gnustep --disable-debug --enable-strip && make && make install && cd ..
+    && cd sope && ./configure --with-gnustep --disable-debug --enable-strip --enable-mysql && make && make install && cd ..
 RUN git clone --depth 1 --branch $(grep "sogo_git_tag" versions.yaml | cut -d" " -f2) https://github.com/inverse-inc/sogo.git \
     && cd sogo && ./configure --disable-debug --enable-strip && make && make install && cd ..
 

@@ -5,7 +5,7 @@
 
 [SOGo](http://www.sogo.nu) is fully supported and trusted groupware server with a focus on scalability and open standards. SOGo is released under the GNU GPL/LGPL v2 and above. 
 
-This Dockerfile packages SOGo compiled from the sources from [Alinto/SOGo](https://github.com/Alinto/sogo) together with [Alinto/SOPE](https://github.com/Alinto/sope),[NGINX](https://www.nginx.com/) and [memcached](https://memcached.org/).
+This Dockerfile packages SOGo compiled from the sources from [Alinto/SOGo](https://github.com/Alinto/sogo) together with [Alinto/SOPE](https://github.com/Alinto/sope), [NGINX](https://www.nginx.com/) and [memcached](https://memcached.org/).
 
 ## Setup
 
@@ -33,7 +33,7 @@ openssl req -newkey rsa:4096 -sha512 -x509 -days 365 -nodes -keyout dovecot-root
 
 ### Database
 
-A separate database is required, for example a MariaDB container as provided by the Docker image [linuxserver/mariadb](https://hub.docker.com/r/linuxserver/mariadb), but also any other database management system SOGo supports can be used. Follow the _Database Configuration_ chapter of the SOGo documentation on these steps, and modify the sogo.conf` file accordingly.
+A separate database is required, for example a MariaDB container as provided by the Docker image [linuxserver/mariadb](https://hub.docker.com/r/linuxserver/mariadb), but also any other database management system SOGo supports can be used. Follow the _Database Configuration_ chapter of the SOGo documentation on these steps, and modify the `sogo.conf` file accordingly.
 
 ### memcached
 
@@ -91,6 +91,8 @@ Insert a new user into SOGo with `docker compose exec db mysql -u sogo -ppasswor
 Update password with `docker compose exec db mysql -u sogo -ppassword -D sogo -e "UPDATE sogo_view SET c_password=MD5('$sogo_pass') WHERE c_uid='$sogo_user';"`
 
 Remove an user from SOGo with `docker compose exec db mysql -u sogo -ppassword -D sogo -e "DELETE FROM sogo_view WHERE c_uid='$sogo_user'"`
+
+Upgrade database after upgrade client with `docker compose exec db mariadb-upgrade -u root -ppassword`
 
 ### Backup / Restore
 
