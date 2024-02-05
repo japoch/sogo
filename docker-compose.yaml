@@ -14,7 +14,7 @@ services:
     #- mail
 
   db:
-    image: linuxserver/mariadb:10.6.12
+    image: linuxserver/mariadb:10.11.6
     expose:
     - "3306"
     environment:
@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
 
   mail:
-    image: instantlinux/dovecot:2.3.20-r6
+    image: instantlinux/dovecot:2.3.20-r11
     ports:
     - ${PORT_DOVECOT_SMTP:-25}:25
     - ${PORT_DOVECOT_IMAPD:-143}:143

@@ -28,6 +28,7 @@ Additional you run the compose file as an systemd service.
     journalctl -u sogo-docker.service -f
 
 ### Generate self-signed SSL key for Dovecot
+
 openssl req -newkey rsa:4096 -sha512 -x509 -days 365 -nodes -keyout dovecot-root/certs/dovecot_cert/smtp.key -out dovecot-root/certs/dovecot_cert/smtp-key.pem
 
 ### Database
@@ -69,7 +70,7 @@ Docker >19.03.0 Beta 3 with BuildX plugin with the full support of the features 
 Build the image for linux/amd64 and linux/arm/v7.
 
     docker buildx create --name testbuilder --use
-    docker buildx build --build-arg VERSION=$(cat VERSION) --platform linux/amd64,linux/arm/v7 -t japoch/sogo:latest -t japoch/sogo:$(<VERSION) --push .
+    docker buildx build --build-arg VERSION=$(cat VERSION) --platform linux/amd64,linux/arm/v7 -t japoch/sogo:latest -t japoch/sogo:$(cat VERSION) --push .
 
 ## Usage
 
@@ -108,6 +109,7 @@ or use SOGos browser import/export function.
 ## Known Bugs
 
 ### Data too long for column 'c_value'
+
 Error message
 
     [ERROR] <0x0x55b6f2205810[GCSSessionsFolder]> -[GCSSessionsFolder writeRecordForEntryWithID:value:creationDate:lastSeenDate:]: cannot write record: <MySQL4Exception: 0x55b6f23655f0> NAME:ExecutionFailed REASON:Data too long for column 'c_value' at row 1

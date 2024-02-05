@@ -1,4 +1,4 @@
-FROM debian:stretch-slim as builder
+FROM debian:bookworm-slim as builder
 RUN apt update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata \
     && ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime \
@@ -7,7 +7,7 @@ RUN apt install -y \
     build-essential \
     git \
     libgnustep-base-dev \
-    libmariadbclient-dev-compat \
+    libmariadb-dev \
     libxml2-dev \
     libldap2-dev \
     libpq-dev \
@@ -26,7 +26,7 @@ RUN git clone --depth 1 --branch $(grep "sogo_git_tag" versions.yaml | cut -d" "
     && cd sogo && ./configure --disable-debug --enable-strip && make && make install && cd ..
 
 
-FROM debian:stretch-slim
+FROM debian:bookworm-slim
 ARG VERSION
 RUN test -n "$VERSION"
 LABEL maintainer="japoch"
@@ -36,7 +36,7 @@ LABEL description="SOGo is fully supported and trusted groupware server."
 RUN apt update \
     && apt install -y --no-install-recommends \
     gnustep-base-runtime \
-    libmemcached-tools libzip4 libytnef0 libsodium18 libldap-2.4.2 libcurl3 libmariadbclient18 \
+    libmemcached-tools libzip4 libytnef0 libsodium23 libldap-2.5-0 libcurl4 libmariadb3 \
     nginx \
     memcached \
     sudo \
