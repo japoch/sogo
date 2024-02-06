@@ -7,6 +7,8 @@
 
 This Dockerfile packages SOGo compiled from the sources from [Alinto/SOGo](https://github.com/Alinto/sogo) together with [Alinto/SOPE](https://github.com/Alinto/sope), [NGINX](https://www.nginx.com/) and [memcached](https://memcached.org/).
 
+Prepared Docker images for Linux/AMD64 and Linux/ARM/V7 are available on [DockerHub](https://hub.docker.com/r/japoch/sogo). Tested on [Raspberry Pi](https://www.raspberrypi.com/) and [Banana Pi](https://www.banana-pi.org/).
+
 ## Setup
 
 Run the Docker container with
