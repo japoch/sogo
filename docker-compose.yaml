@@ -14,7 +14,7 @@ services:
     #- mail
 
   db:
-    image: linuxserver/mariadb:10.11.8
+    image: linuxserver/mariadb:arm64v8-10.11.8
     expose:
     - "3306"
     environment:
@@ -51,7 +51,7 @@ services:
     - db
 
   phpmyadmin:
-    image: linuxserver/phpmyadmin:5.2.1
+    image: linuxserver/phpmyadmin:arm64v8-5.2.1
     ports:
     - "8081:80"
     environment:
