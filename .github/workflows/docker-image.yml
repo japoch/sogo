@@ -11,7 +11,30 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      sogo: ${{ steps.filter.outputs.sogo }}
+    steps:
+    - name: Checkout repository
+      if: github.event_name != 'pull_request'
+      uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          sogo:
+          - Dockefile
+          - versions.yaml
+          - 'sogo-conf/**'
+          - 'nginx-conf/**'
+          - 'artifacts/**'
+  sogo:
+    needs: changes
+    if: needs.changes.outputs.sogo == 'true'
     runs-on: ubuntu-latest
     permissions: # permissions for GITHUB_TOKEN
       contents: read
