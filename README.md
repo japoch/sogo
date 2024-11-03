@@ -13,7 +13,7 @@ Prepared Docker images for Linux/AMD64 and Linux/ARM/V7 are available on [Docker
 
 Run the Docker container with
 
-    docker run --rm -name sogo japoch/sogo:latest
+    docker run --rm -name sogo ghcr.io/japoch/sogo:main
 
 We provide a full functional setup with docker compose.
 
