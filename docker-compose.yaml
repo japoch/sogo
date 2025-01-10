@@ -2,7 +2,7 @@ services:
   sogo:
     image: ghcr.io/japoch/sogo:${VERSION}
     ports:
-    - "8080:80"
+    - "8082:80"
     volumes:
     - ./sogo-conf:/etc/sogo:ro
     - ./nginx-conf/sites-enabled:/etc/nginx/sites-enabled:ro
