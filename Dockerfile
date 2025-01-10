@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim as builder
+FROM debian:bookworm-slim AS builder
 RUN apt update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata \
     && ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime \
@@ -27,9 +27,6 @@ RUN git clone --depth 1 --branch $(grep "sogo_git_tag" versions.yaml | cut -d" "
 
 
 FROM debian:bookworm-slim
-LABEL maintainer="japoch"
-LABEL org.opencontainers.image.authors="japoch"
-LABEL description="SOGo is fully supported and trusted groupware server."
 RUN apt update \
     && apt install -y --no-install-recommends \
     gnustep-base-runtime \
