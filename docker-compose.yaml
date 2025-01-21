@@ -1,8 +1,8 @@
 services:
   sogo:
-    image: ghcr.io/japoch/sogo:${VERSION}
+    image: ghcr.io/japoch/sogo:${VERSION:-main}
     ports:
-    - "8082:80"
+    - "${PORT_SOGO_HTTP:-8080}:80"
     volumes:
     - ./sogo-conf:/etc/sogo:ro
     - ./nginx-conf/sites-enabled:/etc/nginx/sites-enabled:ro
@@ -14,6 +14,7 @@ services:
 
   db:
     image: linuxserver/mariadb:arm64v8-10.11.8
+    platform: linux/arm64/v8
     expose:
     - "3306"
     environment:
@@ -30,6 +31,7 @@ services:
 
   mail:
     image: instantlinux/dovecot:2.3.21-r17
+    platform: linux/arm64/v8
     ports:
     - ${PORT_DOVECOT_SMTP:-25}:25
     - ${PORT_DOVECOT_IMAPD:-143}:143
@@ -51,6 +53,7 @@ services:
 
   phpmyadmin:
     image: linuxserver/phpmyadmin:arm64v8-5.2.1
+    platform: linux/arm64/v8
     ports:
     - "8081:80"
     environment:
