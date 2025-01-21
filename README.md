@@ -69,7 +69,7 @@ Docker >19.03.0 Beta 3 with BuildX plugin with the full support of the features 
 
 ### Build and Push
 
-Build the image for linux/amd64 and linux/arm/v7.
+Build the image for linux/amd64, linux/arm/v7 and linux/arm/v8.
 
     docker buildx create --name testbuilder --use
     docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm/v8 -t japoch/sogo:latest -t japoch/sogo:0.0.4 --push .
