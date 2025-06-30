@@ -1,0 +1,20 @@
+name: Delete old Docker images
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_name:
+        description: The name of the package to delete
+        type: string
+        required: true
+        default: sogo
+
+jobs:
+  delete:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/delete-package-versions@v5
+      with: 
+        package-name: ${{ inputs.package_name }}
+        package-type: container
+        min-versions-to-keep: 2
