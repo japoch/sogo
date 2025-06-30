@@ -13,8 +13,8 @@ services:
     #- mail
 
   db:
-    image: linuxserver/mariadb:arm64v8-10.11.8
-    platform: linux/arm64/v8
+    image: linuxserver/mariadb:11.4.5
+    platform: ${PLATFORM:-linux/amd64}
     expose:
     - "3306"
     environment:
@@ -31,7 +31,7 @@ services:
 
   mail:
     image: instantlinux/dovecot:2.3.21-r17
-    platform: linux/arm64/v8
+    platform: ${PLATFORM:-linux/amd64}
     ports:
     - ${PORT_DOVECOT_SMTP:-25}:25
     - ${PORT_DOVECOT_IMAPD:-143}:143
@@ -52,8 +52,8 @@ services:
     - db
 
   phpmyadmin:
-    image: linuxserver/phpmyadmin:arm64v8-5.2.1
-    platform: linux/arm64/v8
+    image: linuxserver/phpmyadmin:5.2.2
+    platform: ${PLATFORM:-linux/amd64}
     ports:
     - "8081:80"
     environment:
