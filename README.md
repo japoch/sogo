@@ -67,12 +67,16 @@ All other configuration options have no special considerations.
 
 Docker >19.03.0 Beta 3 with BuildX plugin with the full support of the features provided by [Moby BuildKit builder toolkit](https://github.com/moby/buildkit).
 
+You need an personal access token (classic) to publish, install, and delete private, internal, and public packages.
+Please read [Authenticating to the Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry).
+
 ### Build and Push
 
 Build the image for linux/amd64, linux/arm/v7 and linux/arm/v8.
 
+    docker login ghcr.io
     docker buildx create --name testbuilder --use
-    docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm/v8 -t japoch/sogo:latest -t japoch/sogo:0.0.8 --push .
+    docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm/v8 -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:0.0.8 --push .
 
 ## Usage
 
