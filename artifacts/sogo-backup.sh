@@ -30,8 +30,7 @@ function initChecks {
 }
 
 function removeOldBackups {
-
-  if [ ! -z $DRYRUN ]; then
+  if [ -n "$DRYRUN" ]; then
     RM="echo \"not deleted\""
   else
     RM="rm -rf"
@@ -63,5 +62,4 @@ initChecks
 dumpit
 removeOldBackups
 echo "$PROGNAME exiting" | $LOG
-
 
