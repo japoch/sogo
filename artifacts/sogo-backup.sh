@@ -16,8 +16,7 @@ tty -s && LOG="cat -"
 
 function initChecks {
   if [ ! -d "$BACKUP_DIR" ]; then
-    mkdir -m700  -p "$BACKUP_DIR" 
-    if [ $? -ne 0 ]; then
+    if $(mkdir -m700  -p "$BACKUP_DIR"); then
   	  echo "BACKUP_DIR doesn't exist and couldn't create it, aborting ($BACKUP_DIR)" | $LOG
   	  exit 1
     fi
