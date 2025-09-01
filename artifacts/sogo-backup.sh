@@ -1,13 +1,10 @@
 #!/bin/bash
-set -o pipefail
+set -uo pipefail
 
-#set -x
 PROGNAME="$(basename $0)"
-
 BACKUP_DIR="${BACKUP_DIR:-~sogo/backups}"
 SOGO_TOOL="/usr/sbin/sogo-tool"
 DAYS_TO_KEEP="${DAYS_TO_KEEP:-30}"
-
 DATE="$(date +%F_%H%M)"
 LOG="logger -t $PROGNAME -p daemon.info"
 
@@ -16,7 +13,7 @@ tty -s && LOG="cat -"
 
 function initChecks {
   if [ ! -d "$BACKUP_DIR" ]; then
-    if $(mkdir -m700  -p "$BACKUP_DIR"); then
+    if $(mkdir --mode=700 "$BACKUP_DIR"); then
   	  echo "BACKUP_DIR doesn't exist and couldn't create it, aborting ($BACKUP_DIR)" | $LOG
   	  exit 1
     fi
@@ -42,7 +39,7 @@ function removeOldBackups {
 
 
 function dumpit {
-  if $(mkdir -m700  "$BACKUP_DIR/sogo-${DATE}" 2>&1 | $LOG); then
+  if $(mkdir --mode=700 "$BACKUP_DIR/sogo-${DATE}" 2>&1 | $LOG); then
     exit 1
   fi
   $SOGO_TOOL backup "$BACKUP_DIR/sogo-${DATE}/" ALL 2>&1 | $LOG
