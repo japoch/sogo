@@ -42,8 +42,7 @@ function removeOldBackups {
 
 
 function dumpit {
-  mkdir -m700  "$BACKUP_DIR/sogo-${DATE}" 2>&1  | $LOG
-  if [ $? -ne 0 ]; then
+  if $(mkdir -m700  "$BACKUP_DIR/sogo-${DATE}" 2>&1 | $LOG); then
     exit 1
   fi
   $SOGO_TOOL backup "$BACKUP_DIR/sogo-${DATE}/" ALL 2>&1 | $LOG
