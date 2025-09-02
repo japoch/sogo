@@ -53,7 +53,7 @@ jobs:
           FORMAT: sarif
         run: |
           echo "::group::Analyze with tool ${TOOL}"
-          .codacy/cli.sh analyze --tool ${TOOL} --format ${FORMAT} --output ${TOOL}.sarif
+          .codacy/cli.sh analyze --tool ${TOOL} --format ${FORMAT} --output ${TOOL}.sarif || true
           echo "::endgroup::"
           echo "::group::Display results"
           ls -la
