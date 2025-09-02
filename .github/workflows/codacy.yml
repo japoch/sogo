@@ -53,15 +53,16 @@ jobs:
           FORMAT: sarif
         run: |
           echo "::group::Analyze with tool ${TOOL}"
-          .codacy/cli.sh analyze --tool ${TOOL} --format ${FORMAT} --output results.sarif
+          .codacy/cli.sh analyze --tool ${TOOL} --format ${FORMAT} --output ${TOOL}.sarif
           echo "::endgroup::"
           echo "::group::Display results"
           ls -la
-          cat results.sarif
+          cat ${TOOL}.sarif
           echo "::endgroup::"
 
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: results.sarif
+          sarif_file: ${{matrix.codacy_tool}}.sarif
+          category: ${{matrix.codacy_tool}}
