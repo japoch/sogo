@@ -52,8 +52,12 @@ jobs:
           TOOL: ${{matrix.codacy_tool}}
           FORMAT: sarif
         run: |
-          echo "::group::Analyze with language ${LANGUAGE}"
-          .codacy/cli.sh analyze --tool ${TOOL} --format ${FORMAT} -o results.sarif
+          echo "::group::Analyze with tool ${TOOL}"
+          .codacy/cli.sh analyze --tool ${TOOL} --format ${FORMAT} --output results.sarif
+          echo "::endgroup::"
+          echo "::group::Display results"
+          ls -la
+          cat results.sarif
           echo "::endgroup::"
 
       # Upload the SARIF file generated in the previous step
