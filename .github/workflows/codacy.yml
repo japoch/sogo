@@ -57,7 +57,7 @@ jobs:
           echo "::endgroup::"
           echo "::group::Fix sarif file"
           echo "Fix: instance.runs[0].tool.driver.rules is not of a type(s) array"
-          echo "TODO"
+          sed -i 's/"rules": null/"rules": []/g' ${TOOL}.sarif
           echo "::endgroup::"
           echo "::group::Display results"
           ls -la
@@ -66,7 +66,7 @@ jobs:
 
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{matrix.codacy_tool}}.sarif
           category: ${{matrix.codacy_tool}}
