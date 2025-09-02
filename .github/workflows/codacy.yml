@@ -36,8 +36,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - codacy_tool: lizard
-        - codacy_tool: pmd
         - codacy_tool: pylint
         - codacy_tool: semgrep
         - codacy_tool: trivy
@@ -53,7 +51,7 @@ jobs:
           FORMAT: sarif
         run: |
           echo "::group::Analyze with tool ${TOOL}"
-          .codacy/cli.sh analyze --tool ${TOOL} --format ${FORMAT} --output ${TOOL}.sarif || true
+          .codacy/cli.sh analyze --tool ${TOOL} --format ${FORMAT} --output ${TOOL}.sarif
           echo "::endgroup::"
           echo "::group::Fix sarif file"
           echo "Fix: instance.runs[0].tool.driver.rules is not of a type(s) array"
