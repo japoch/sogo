@@ -8,7 +8,7 @@
 
 This Dockerfile packages SOGo compiled from the sources from [Alinto/SOGo](https://github.com/Alinto/sogo) together with [Alinto/SOPE](https://github.com/Alinto/sope), [NGINX](https://www.nginx.com/) and [memcached](https://memcached.org/).
 
-Prepared Docker images for Linux/AMD64 and Linux/ARM/V7 are available on [DockerHub](https://hub.docker.com/r/japoch/sogo). Tested on [Raspberry Pi](https://www.raspberrypi.com/) and [Banana Pi](https://www.banana-pi.org/).
+Prepared Docker images for Linux/AMD64, Linux/ARM/V7 and Linux/ARM/V8 are available on [GitHub](https://github.com/japoch/sogo/pkgs/container/sogo). Tested on [Raspberry Pi 4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/), [Banana Pi](https://www.banana-pi.org/) and [Windows Subsystem for Linux - WSL](https://github.com/microsoft/WSL).
 
 ## Setup
 
@@ -73,11 +73,12 @@ Please read [Authenticating to the Container registry](https://docs.github.com/e
 
 ### Build and Push
 
-Build the image for linux/amd64, linux/arm/v7 and linux/arm/v8.
+Build the image with the following command lines.
 
+    source .env
     docker login ghcr.io
     docker buildx create --name testbuilder --use
-    docker buildx build --platform linux/amd64,linux/arm/v7,linux/arm/v8 -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:0.0.8 --push .
+    docker buildx build --platform ${BUILD_PLATFORMS} -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:${VERSION} --push .
 
 ## Usage
 
