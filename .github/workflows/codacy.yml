@@ -55,6 +55,10 @@ jobs:
           echo "::group::Analyze with tool ${TOOL}"
           .codacy/cli.sh analyze --tool ${TOOL} --format ${FORMAT} --output ${TOOL}.sarif || true
           echo "::endgroup::"
+          echo "::group::Fix sarif file"
+          echo "Fix: instance.runs[0].tool.driver.rules is not of a type(s) array"
+          echo "TODO"
+          echo "::endgroup::"
           echo "::group::Display results"
           ls -la
           cat ${TOOL}.sarif
@@ -62,7 +66,7 @@ jobs:
 
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: ${{matrix.codacy_tool}}.sarif
           category: ${{matrix.codacy_tool}}
