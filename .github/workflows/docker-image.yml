@@ -52,7 +52,7 @@ jobs:
   
   sogo:
     needs: changes
-    if: needs.changes.outputs.sogo == 'true'
+    if: needs.changes.outputs.sogo == 'true' || ( github.event_name == 'push' && github.ref_type == 'tag' )
     runs-on: ubuntu-latest
     permissions: # permissions for GITHUB_TOKEN
       contents: read
