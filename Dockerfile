@@ -6,6 +6,7 @@ RUN apt update \
 RUN apt install -y \
     build-essential \
     git \
+    pkg-config \
     libgnustep-base-dev \
     libmariadb-dev-compat \
     libxml2-dev \
@@ -21,18 +22,31 @@ RUN apt install -y \
 WORKDIR /usr/src/app
 COPY versions.yaml .
 RUN git clone --depth 1 --branch $(grep "sope_git_tag" versions.yaml | cut -d" " -f2) https://github.com/inverse-inc/sope.git \
-    && cd sope && ./configure --with-gnustep --disable-debug --enable-strip --enable-mysql && make && make install && cd ..
+    && cd sope \
+    && ./configure --with-gnustep --disable-debug --enable-strip --enable-mysql \
+    && make \
+    && make install \
+    && cd ..
 RUN git clone --depth 1 --branch $(grep "sogo_git_tag" versions.yaml | cut -d" " -f2) https://github.com/inverse-inc/sogo.git \
-    && cd sogo && ./configure --disable-debug --enable-strip && make && make install && cd ..
+    && cd sogo \
+    && ./configure --disable-debug --enable-strip \
+    && make \
+    && make install \
+    && cd ..
 
 
 FROM debian:bookworm-slim
 RUN apt update \
     && apt install -y --no-install-recommends \
     gnustep-base-runtime \
-    libmemcached-tools libzip4 libytnef0 libsodium23 libldap-2.5-0 libcurl4 libmariadb3 \
+    libmemcached-tool \
+    libzip4 \
+    libytnef0 \
+    libsodium23 \
+    libldap-2.5-0 \
+    libcurl4 \
+    libmariadb3 \
     nginx \
-    memcached \
     sudo \
     procps \
     && rm -rf /var/lib/apt/lists/*

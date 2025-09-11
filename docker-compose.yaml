@@ -1,16 +1,30 @@
 services:
   sogo:
-    image: ghcr.io/japoch/sogo:${VERSION:-latest}
+    #image: ghcr.io/japoch/sogo:${VERSION:-latest}
+    image: sogo:dev
     ports:
-    - "${PORT_SOGO_HTTP:-8080}:80"
+    - ${PORT_SOGO_HTTP:-8080}:80
     volumes:
     - ./sogo-conf:/etc/sogo:ro
     - ./nginx-conf/sites-enabled:/etc/nginx/sites-enabled:ro
     - ./backup:/mnt/backup
-    restart: unless-stopped
     depends_on:
-    - db
-    #- mail
+      memcached:
+        condition: service_started
+      db:
+        condition: service_healthy
+        restart: true
+      #mail:
+      #  condition: service_started
+
+  memcached:
+    image: memcached:1.6.39-alpine
+    platform: ${PLATFORM:-linux/amd64}
+    ports:
+    - 11211:11211
+    command:
+      - -vv
+      - --memory-limit=64
 
   db:
     image: linuxserver/mariadb:11.4.5
@@ -28,6 +42,12 @@ services:
     volumes:
     - ./db-root:/config
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   mail:
     image: instantlinux/dovecot:2.3.21-r17
@@ -55,7 +75,7 @@ services:
     image: linuxserver/phpmyadmin:5.2.2
     platform: ${PLATFORM:-linux/amd64}
     ports:
-    - "8081:80"
+    - 8081:80
     environment:
     - PUID=1000
     - PGID=1000
