@@ -1,6 +1,6 @@
 services:
   sogo:
-    image: ghcr.io/japoch/sogo:${VERSION:-main}
+    image: ghcr.io/japoch/sogo:${VERSION:-latest}
     ports:
     - "${PORT_SOGO_HTTP:-8080}:80"
     volumes:
