@@ -5,8 +5,8 @@ on:
     branches: [ "main", "develop" ]
   pull_request:
     branches: [ "main" ]
-  schedule:
-    - cron: '30 5 * * 3'
+#   schedule:
+#     - cron: '30 5 * * 3'
 
 jobs:
   analyze:
