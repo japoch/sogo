@@ -1,0 +1,91 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- Added `.dockerignore` rules to reduce the Docker build context.
+- Added multi-platform and platform-specific local build instructions.
+
+### Changed
+
+- Updated SOGo and SOPE to 5.12.12.
+- Improved the Docker build with parallel compilation and package-cache cleanup.
+- Updated Docker Compose with configurable service settings, database health checks,
+  startup ordering, init processes, and bounded container logs.
+- Disabled the scheduled CodeQL workflow.
+
+## [0.0.9]
+
+### Added
+
+- Added a CodeQL workflow and Docker image publishing on tag pushes.
+
+### Changed
+
+- Updated SOGo to 5.12.3 and updated the Docker Compose configuration.
+
+### Security
+
+- Fixed CodeQL findings in `sogo-backup.sh`.
+
+## [0.0.8]
+
+### Added
+
+- Added a workflow to delete old container packages.
+
+### Changed
+
+- Updated SOGo to 5.12.2 and made the Docker platform configurable.
+- Updated the documentation.
+
+## [0.0.7]
+
+### Added
+
+- Added the SOGo administrator database table.
+
+### Changed
+
+- Updated the documentation.
+
+## [0.0.6]
+
+### Changed
+
+- Configured the target platform in Docker Compose.
+
+## [0.0.5]
+
+### Added
+
+- Added multi-platform Docker image builds, including ARM support.
+
+### Changed
+
+- Updated SOGo to 5.11.2 and made Docker Compose settings environment-configurable.
+- Changed the SOGo TCP port.
+
+### Fixed
+
+- Fixed script access permissions.
+
+## [0.0.4]
+
+### Changed
+
+- Updated SOGo to 5.10.0.
+
+[Unreleased]: https://github.com/japoch/SOGo/compare/v0.0.9...main
+[0.0.9]: https://github.com/japoch/SOGo/compare/0.0.8...v0.0.9
+[0.0.8]: https://github.com/japoch/SOGo/compare/0.0.7...0.0.8
+[0.0.7]: https://github.com/japoch/SOGo/compare/0.0.6...0.0.7
+[0.0.6]: https://github.com/japoch/SOGo/compare/0.0.5...0.0.6
+[0.0.5]: https://github.com/japoch/SOGo/compare/0.0.4...0.0.5
+[0.0.4]: https://github.com/japoch/SOGo/compare/ad621444268ae4e9602d3a5a3e9904cc2c7ae895...0.0.4

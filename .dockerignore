@@ -1,0 +1,11 @@
+.codacy
+.git
+.gitignore
+README.md
+CHANGELOG.md
+.github
+backup/
+**/.DS_Store
+node_modules/
+tmp/
+*.log

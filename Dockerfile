@@ -1,40 +1,53 @@
 FROM debian:bookworm-slim AS builder
-RUN apt update \
+RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata \
     && ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime \
-    && dpkg-reconfigure --frontend noninteractive tzdata
-RUN apt install -y \
-    build-essential \
-    git \
-    libgnustep-base-dev \
-    libmariadb-dev-compat \
-    libxml2-dev \
-    libldap2-dev \
-    libpq-dev \
-    libcurl4-openssl-dev \
-    libmemcached-dev \
-    libsodium-dev \
-    libzip-dev \
-    libytnef0-dev \
-    gnutls-dev \
-    libssl-dev
+    && dpkg-reconfigure --frontend noninteractive tzdata \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
+        libgnustep-base-dev \
+        libmariadb-dev-compat \
+        libxml2-dev \
+        libldap2-dev \
+        libpq-dev \
+        libcurl4-openssl-dev \
+        libmemcached-dev \
+        libsodium-dev \
+        libzip-dev \
+        libytnef0-dev \
+        gnutls-dev \
+        libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/src/app
 COPY versions.yaml .
 RUN git clone --depth 1 --branch $(grep "sope_git_tag" versions.yaml | cut -d" " -f2) https://github.com/inverse-inc/sope.git \
-    && cd sope && ./configure --with-gnustep --disable-debug --enable-strip --enable-mysql && make && make install && cd ..
-RUN git clone --depth 1 --branch $(grep "sogo_git_tag" versions.yaml | cut -d" " -f2) https://github.com/inverse-inc/sogo.git \
-    && cd sogo && ./configure --disable-debug --enable-strip && make && make install && cd ..
-
+    && cd sope \
+    && ./configure --with-gnustep --disable-debug --enable-strip --enable-mysql \
+    && make -j"$(nproc)" \
+    && make install \
+    && cd .. \
+    && git clone --depth 1 --branch $(grep "sogo_git_tag" versions.yaml | cut -d" " -f2) https://github.com/inverse-inc/sogo.git \
+    && cd sogo \
+    && ./configure --disable-debug --enable-strip \
+    && make -j"$(nproc)" \
+    && make install
 
 FROM debian:bookworm-slim
-RUN apt update \
-    && apt install -y --no-install-recommends \
-    gnustep-base-runtime \
-    libmemcached-tools libzip4 libytnef0 libsodium23 libldap-2.5-0 libcurl4 libmariadb3 \
-    nginx \
-    memcached \
-    sudo \
-    procps \
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        gnustep-base-runtime \
+        libmemcached-tools \
+        libzip4 \
+        libytnef0 \
+        libsodium23 \
+        libldap-2.5-0 \
+        libcurl4 \
+        libmariadb3 \
+        nginx \
+        memcached \
+        sudo \
+        procps \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local /usr/local
 COPY sogo-conf/sogo.conf /etc/sogo/

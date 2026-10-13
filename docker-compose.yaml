@@ -1,71 +1,105 @@
 services:
   sogo:
-    image: ghcr.io/japoch/sogo:${VERSION:-latest}
+    image: ghcr.io/japoch/sogo:${VERSION:-main}
+    init: true
     ports:
-    - "${PORT_SOGO_HTTP:-8080}:80"
+      - "${PORT_SOGO_HTTP:-8080}:80"
     volumes:
-    - ./sogo-conf:/etc/sogo:ro
-    - ./nginx-conf/sites-enabled:/etc/nginx/sites-enabled:ro
-    - ./backup:/mnt/backup
+      - ./sogo-conf:/etc/sogo:ro
+      - ./nginx-conf/sites-enabled:/etc/nginx/sites-enabled:ro
+      - ./backup:/mnt/backup
     restart: unless-stopped
     depends_on:
-    - db
-    #- mail
+      db:
+        condition: service_healthy
+      # mail:
+      #   condition: service_started
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db:
     image: linuxserver/mariadb:11.4.5
     platform: ${PLATFORM:-linux/amd64}
+    init: true
     expose:
-    - "3306"
+      - "3306"
     environment:
-    - PUID=1000
-    - PGID=1000
-    - TZ=Etc/UTC
-    - MYSQL_ROOT_PASSWORD=password
-    - MYSQL_DATABASE=sogo
-    - MYSQL_USER=sogo
-    - MYSQL_PASSWORD=password
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: Etc/UTC
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sogo}
+      MYSQL_USER: ${MYSQL_USER:-sogo}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
     volumes:
-    - ./db-root:/config
+      - ./db-root:/config
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   mail:
     image: instantlinux/dovecot:2.3.21-r17
     platform: ${PLATFORM:-linux/amd64}
+    init: true
     ports:
-    - ${PORT_DOVECOT_SMTP:-25}:25
-    - ${PORT_DOVECOT_IMAPD:-143}:143
-    - ${PORT_DOVECOT_IMAPS:-993}:993
+      - "${PORT_DOVECOT_SMTP:-1025}:25"
+      - "${PORT_DOVECOT_IMAPD:-1143}:143"
+      - "${PORT_DOVECOT_IMAPS:-1993}:993"
     environment:
-    - TZ=Etc/UTC
-    #- SSL_DH=dovecot-key.pem
+      TZ: Etc/UTC
+      #- SSL_DH=dovecot-key.pem
     volumes:
-    - ./mail-root/etc/:/etc/dovecot/conf.local:ro
-    - ./mail-root/postfix/etc/:/etc/postfix/postfix.d:ro
-    - ./mail-root/certs/dovecot_cert:/run/secrets:ro
-    - inbox:/var/spool/mail
-    - spool:/var/spool/postfix
-    - webmail:/home
-    #entrypoint: "ls -la /etc/dovecot/"
+      - ./mail-root/etc/:/etc/dovecot/conf.local:ro
+      - ./mail-root/postfix/etc/:/etc/postfix/postfix.d:ro
+      - ./mail-root/certs/dovecot_cert:/run/secrets:ro
+      - inbox:/var/spool/mail
+      - spool:/var/spool/postfix
+      - webmail:/home
+    # entrypoint: "ls -la /etc/dovecot/"
     restart: unless-stopped
     depends_on:
-    - db
+      db:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   phpmyadmin:
     image: linuxserver/phpmyadmin:5.2.2
     platform: ${PLATFORM:-linux/amd64}
+    init: true
     ports:
-    - "8081:80"
+      - "${PORT_PHPMYADMIN_HTTP:-8081}:80"
     environment:
-    - PUID=1000
-    - PGID=1000
-    - TZ=Etc/UTC
-    - PMA_ARBITRARY=1
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: Etc/UTC
+      PMA_ARBITRARY: "1"
     volumes:
-    - ./phpmyadmin-root:/config
+      - ./phpmyadmin-root:/config
     restart: unless-stopped
     depends_on:
-    - db
+      db:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   inbox:

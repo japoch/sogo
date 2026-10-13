@@ -4,7 +4,7 @@
 [![Codacy Security Scan](https://github.com/japoch/SOGo/actions/workflows/codacy.yml/badge.svg)](https://github.com/japoch/SOGo/actions/workflows/codacy.yml)
 [![CodeQL Advanced](https://github.com/japoch/sogo/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/japoch/sogo/actions/workflows/codeql.yml)
 
-[SOGo](http://www.sogo.nu) is fully supported and trusted groupware server with a focus on scalability and open standards. SOGo is released under the GNU GPL/LGPL v2 and above. 
+[SOGo](http://www.sogo.nu) is fully supported and trusted groupware server with a focus on scalability and open standards. SOGo is released under the GNU GPL/LGPL v2 and above.
 
 This Dockerfile packages SOGo compiled from the sources from [Alinto/SOGo](https://github.com/Alinto/sogo) together with [Alinto/SOPE](https://github.com/Alinto/sope), [NGINX](https://www.nginx.com/) and [memcached](https://memcached.org/).
 
@@ -71,14 +71,56 @@ Docker >19.03.0 Beta 3 with BuildX plugin with the full support of the features 
 You need an personal access token (classic) to publish, install, and delete private, internal, and public packages.
 Please read [Authenticating to the Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry).
 
+### Platform support
+
+The supported image is the multi-architecture container published to GHCR. It includes ARM-compatible builds and is suitable for Raspberry Pi 4.
+
+For Raspberry Pi 4, prefer a 64-bit OS (`aarch64`). The image also supports ARM v7 / v8 variants, but 64-bit is the most reliable choice for modern Raspberry deployments.
+
+### Local builds
+
+For local development and testing, build only the target platform instead of all three platforms at once. This is much faster and usually enough for daily iteration.
+
+Example for Raspberry Pi 4:
+
+    docker buildx build --platform linux/arm64 --load -t ghcr.io/japoch/sogo:local-test .
+
+Example for x86_64 hosts:
+
+    docker buildx build --platform linux/amd64 --load -t ghcr.io/japoch/sogo:local-test .
+
 ### Build and Push
 
-Build the image with the following command lines.
+Update the versions in `versions.yaml` and `.env`.
+
+The project default release build targets the following platforms:
+
+    BUILD_PLATFORMS=linux/amd64,linux/arm/v7,linux/arm/v8
+
+This is intended for releases and publishing, not for every local development loop. For frequent edits, prefer the single-platform commands above.
+
+Release build (PowerShell):
+
+    Get-Content .env | ForEach-Object { if ($_ -match '^(.*?)=(.*)$') { $name = $matches[1]; $value = $matches[2]; [System.Environment]::SetEnvironmentVariable($name, $value, 'Process') } }
+    docker login ghcr.io
+    docker buildx create --name testbuilder --use
+    docker buildx build --platform $env:BUILD_PLATFORMS -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:$env:VERSION --push .
+
+Release build (Bash):
 
     source .env
     docker login ghcr.io
     docker buildx create --name testbuilder --use
     docker buildx build --platform ${BUILD_PLATFORMS} -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:${VERSION} --push .
+
+### Performance notes
+
+The build process compiles SOGo and SOPE from source. For faster local builds:
+
+- build only one platform at a time
+- use `--load` for a local image when testing
+- keep the build context small via `.dockerignore`
+- use parallel compilation with `make -j"$(nproc)"` where supported
 
 ## Usage
 
