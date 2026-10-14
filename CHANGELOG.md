@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0]
+
 ### Added
 
 - Added `.dockerignore` rules to reduce the Docker build context.
@@ -82,7 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated SOGo to 5.10.0.
 
-[Unreleased]: https://github.com/japoch/SOGo/compare/v0.0.9...main
+[Unreleased]: https://github.com/japoch/SOGo/compare/v1.0.0...main
+[1.0.0]: https://github.com/japoch/SOGo/compare/v0.0.9...v1.0.0
 [0.0.9]: https://github.com/japoch/SOGo/compare/0.0.8...v0.0.9
 [0.0.8]: https://github.com/japoch/SOGo/compare/0.0.7...0.0.8
 [0.0.7]: https://github.com/japoch/SOGo/compare/0.0.6...0.0.7
