@@ -16,3 +16,6 @@ images/*
 
 # Develop folders
 reverse-proxy/*
+
+# Local GitHub Container Registry token
+.ghcr-token

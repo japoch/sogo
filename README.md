@@ -71,6 +71,24 @@ Docker >19.03.0 Beta 3 with BuildX plugin with the full support of the features 
 You need an personal access token (classic) to publish, install, and delete private, internal, and public packages.
 Please read [Authenticating to the Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry).
 
+#### GitHub Container Registry token
+
+Create a personal access token (classic) in GitHub under **Settings → Developer settings → Personal access tokens → Tokens (classic)**. Grant `read:packages` to pull images and `write:packages` to publish them.
+
+Save the token by itself (no quotes) in a `.ghcr-token` file in the repository root. This file is excluded by `.gitignore`; do not commit or share it.
+
+Log in to GHCR using the token:
+
+PowerShell:
+
+    Get-Content -Raw .ghcr-token | docker login ghcr.io --username GITHUB_USERNAME --password-stdin
+
+Bash:
+
+    docker login ghcr.io --username GITHUB_USERNAME --password-stdin < .ghcr-token
+
+Replace `GITHUB_USERNAME` with your GitHub username. Docker saves the login credentials in its local configuration; run `docker logout ghcr.io` when you want to remove them.
+
 ### Platform support
 
 The supported image is the multi-architecture container published to GHCR. It includes ARM-compatible builds and is suitable for Raspberry Pi 4.
@@ -102,14 +120,14 @@ This is intended for releases and publishing, not for every local development lo
 Release build (PowerShell):
 
     Get-Content .env | ForEach-Object { if ($_ -match '^(.*?)=(.*)$') { $name = $matches[1]; $value = $matches[2]; [System.Environment]::SetEnvironmentVariable($name, $value, 'Process') } }
-    docker login ghcr.io
+    Get-Content -Raw .ghcr-token | docker login ghcr.io --username GITHUB_USERNAME --password-stdin
     docker buildx create --name testbuilder --use
     docker buildx build --platform $env:BUILD_PLATFORMS -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:$env:VERSION --push .
 
 Release build (Bash):
 
     source .env
-    docker login ghcr.io
+    docker login ghcr.io --username GITHUB_USERNAME --password-stdin < .ghcr-token
     docker buildx create --name testbuilder --use
     docker buildx build --platform ${BUILD_PLATFORMS} -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:${VERSION} --push .
 
