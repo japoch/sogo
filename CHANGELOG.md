@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0]
+
+### Added
+
+- Added a documented Git-tag release flow for versioned Docker images.
+- Published Docker images with exact, `major.minor`, and major-version tags.
+
+### Changed
+
+- Set the Compose image version to `1.1.0` in `.env`.
+
 ## [1.0.0]
 
 ### Added
@@ -84,7 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated SOGo to 5.10.0.
 
-[Unreleased]: https://github.com/japoch/SOGo/compare/v1.0.0...main
+[Unreleased]: https://github.com/japoch/SOGo/compare/v1.1.0...main
+[1.1.0]: https://github.com/japoch/SOGo/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/japoch/SOGo/compare/v0.0.9...v1.0.0
 [0.0.9]: https://github.com/japoch/SOGo/compare/0.0.8...v0.0.9
 [0.0.8]: https://github.com/japoch/SOGo/compare/0.0.7...0.0.8

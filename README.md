@@ -111,6 +111,13 @@ Example for x86_64 hosts:
 
 Update the versions in `versions.yaml` and `.env`.
 
+Set `VERSION` in `.env` to the release version without the `v` prefix (for example, `1.1.0`). Create and push the matching Git tag with the `v` prefix:
+
+    git tag -a v1.1.0 -m "Release v1.1.0"
+    git push origin v1.1.0
+
+Pushing a `v*` tag triggers the GitHub Actions release build. It publishes the exact version (`1.1.0`), the `major.minor` alias (`1.1`), the major alias (`1`), and `latest` for the newest stable release. Docker Compose uses the `VERSION` from `.env` to select the exact image version.
+
 The project default release build targets the following platforms:
 
     BUILD_PLATFORMS=linux/amd64,linux/arm/v7,linux/arm/v8
