@@ -18,12 +18,18 @@ on:
         type: boolean
         required: true
         default: true
+      min_age_hours:
+        description: Minimum age since creation or update before deletion (at least 24 hours)
+        type: number
+        required: true
+        default: 168
 
 permissions:
   contents: read
 
 concurrency:
-  group: package-cleanup-${{ inputs.package_name }}
+  # Shared with Docker publishing, across branches and release tags.
+  group: ghcr-maintenance-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
@@ -42,12 +48,14 @@ jobs:
       - name: Test cleanup logic
         run: node --test .github/scripts/test_delete_old_packages.cjs
 
-      - name: Clean up old release versions
+      - name: Clean up old releases and orphaned manifests
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PACKAGE_NAME: ${{ inputs.package_name }}
           KEEP_VERSIONS: ${{ inputs.keep_versions }}
           DRY_RUN: ${{ inputs.dry_run }}
+          MIN_AGE_HOURS: ${{ inputs.min_age_hours }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
             const { cleanupPackages } = require('./.github/scripts/delete-old-packages.cjs');
