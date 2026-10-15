@@ -4,201 +4,169 @@
 [![Codacy Security Scan](https://github.com/japoch/SOGo/actions/workflows/codacy.yml/badge.svg)](https://github.com/japoch/SOGo/actions/workflows/codacy.yml)
 [![CodeQL Advanced](https://github.com/japoch/sogo/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/japoch/sogo/actions/workflows/codeql.yml)
 
-[SOGo](http://www.sogo.nu) is fully supported and trusted groupware server with a focus on scalability and open standards. SOGo is released under the GNU GPL/LGPL v2 and above.
+[SOGo](http://www.sogo.nu) is an open-source groupware server licensed under GNU GPL/LGPL v2 and above. This image builds [SOGo](https://github.com/Alinto/sogo) and [SOPE](https://github.com/Alinto/sope) from source and includes NGINX and memcached.
 
-This Dockerfile packages SOGo compiled from the sources from [Alinto/SOGo](https://github.com/Alinto/sogo) together with [Alinto/SOPE](https://github.com/Alinto/sope), [NGINX](https://www.nginx.com/) and [memcached](https://memcached.org/).
-
-Prepared Docker images for Linux/AMD64, Linux/ARM/V7 and Linux/ARM/V8 are available on [GitHub](https://github.com/japoch/sogo/pkgs/container/sogo). Tested on [Raspberry Pi 4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/), [Banana Pi](https://www.banana-pi.org/) and [Windows Subsystem for Linux - WSL](https://github.com/microsoft/WSL).
+Images are available on [GHCR](https://github.com/japoch/sogo/pkgs/container/sogo) for `linux/amd64`, `linux/arm/v7`, and `linux/arm/v8`. Tested on Raspberry Pi 4, Banana Pi, and WSL. A 64-bit OS (`aarch64`) is recommended for Raspberry Pi 4.
 
 ## Setup
 
-Run the Docker container with
+Start the provided Docker Compose stack:
 
-    docker run --rm --name sogo ghcr.io/japoch/sogo:latest
+```bash
+docker compose up -d
+docker compose logs -f
+```
 
-We provide a full functional setup with docker compose.
+To run the SOGo container separately (requires an external database):
 
-    docker compose up -d
+```bash
+docker run --rm --name sogo ghcr.io/japoch/sogo:latest
+```
 
-Additional you run the compose file as an systemd service.
+Optionally, manage the Compose stack through systemd:
 
-    cp ./artifacts/sogo-docker.service /etc/systemd/system
-    systemctl start sogo-docker.service && systemctl enable sogo-docker.service
+```bash
+cp ./artifacts/sogo-docker.service /etc/systemd/system
+systemctl enable --now sogo-docker.service
+journalctl -u sogo-docker.service -f
+```
 
-    # and check logs with
-    docker compose logs -f
-    # and with
-    journalctl -u sogo-docker.service -f
+### Configuration
 
-### Generate self-signed SSL key for Dovecot
+- **Database:** Configure a separate database supported by SOGo in `sogo-conf/sogo.conf`. See the *Database Configuration* chapter of the SOGo documentation.
+- **Mail:** See the SOGo documentation for MTA configuration and SMTP authentication.
+- **NGINX and HTTPS:** Configuration files are in `artifacts/nginx.conf` and `nginx-conf/sites-enabled/sogo-nginx.conf`. Provide certificates in the container as needed. The image exposes ports 80 (HTTP), 443 (HTTPS), and 20000 (SOGo).
+- **Workers:** Adjust `WOWorkersCount` in `sogo.conf` to match your workload; the example value of `8` may be insufficient for medium and larger instances.
+- **Cron:** `artifacts/sogo.cron` contains jobs for backups, session cleanup, and Sieve. To enable scheduled backups, uncomment the backup job and rebuild. The script is installed at `/usr/local/share/doc/sogo/sogo-backup.sh`.
 
-openssl req -newkey rsa:4096 -sha512 -x509 -days 365 -nodes -keyout dovecot-root/certs/dovecot_cert/smtp.key -out dovecot-root/certs/dovecot_cert/smtp-key.pem
+Generate a self-signed certificate for Dovecot:
 
-### Database
-
-A separate database is required, for example a MariaDB container as provided by the Docker image [linuxserver/mariadb](https://hub.docker.com/r/linuxserver/mariadb), but also any other database management system SOGo supports can be used. Follow the _Database Configuration_ chapter of the SOGo documentation on these steps, and modify the `sogo.conf` file accordingly.
-
-### memcached
-
-As most users will not want to separate memcached, there is a built-in daemon.
-
-### Sending Mail
-
-For further details in MTA configuration including SMTP auth, refer to SOGo's documentation.
-
-### NGINX and HTTPs
-
-As already given above, the default NGINX configuration is already available under `artifacts/nginx.conf` and  `nginx-conf/sites-enabled/sogo-nginx.conf`. The container exposes HTTP (80), HTTPS (443), and 20000, the default port the SOGo daemon listens on. You can directly include the certificates within the container.
-
-### Cron-Jobs: Backup, Session Timeout, Sieve
-
-SOGo heavily relies on cron jobs for different purposes. The image provides SOGo's original cron file as `artifacts/sogo.cron`. The backup script is available and made executable at the location `/usr/local/share/doc/sogo/sogo-backup.sh`, so backup is fully functional after uncommenting the respective cron job and after rebuild the image.
-
-### Further Configuration
-
-Remember to start a reasonable number of worker processes matching to your needs (8 will not be enough for medium and larger instances):
-
-    WOWorkersCount = 8;
-
-All other configuration options have no special considerations.
+```bash
+openssl req -newkey rsa:4096 -sha512 -x509 -days 365 -nodes \
+  -keyout dovecot-root/certs/dovecot_cert/smtp.key \
+  -out dovecot-root/certs/dovecot_cert/smtp-key.pem
+```
 
 ## Build
 
-### Requirements
-
-Docker >19.03.0 Beta 3 with BuildX plugin with the full support of the features provided by [Moby BuildKit builder toolkit](https://github.com/moby/buildkit).
-
-You need an personal access token (classic) to publish, install, and delete private, internal, and public packages.
-Please read [Authenticating to the Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry).
-
-#### GitHub Container Registry token
-
-Create a personal access token (classic) in GitHub under **Settings → Developer settings → Personal access tokens → Tokens (classic)**. Grant `read:packages` to pull images and `write:packages` to publish them.
-
-Save the token by itself (no quotes) in a `.ghcr-token` file in the repository root. This file is excluded by `.gitignore`; do not commit or share it.
-
-Log in to GHCR using the token:
-
-PowerShell:
-
-    Get-Content -Raw .ghcr-token | docker login ghcr.io --username GITHUB_USERNAME --password-stdin
-
-Bash:
-
-    docker login ghcr.io --username GITHUB_USERNAME --password-stdin < .ghcr-token
-
-Replace `GITHUB_USERNAME` with your GitHub username. Docker saves the login credentials in its local configuration; run `docker logout ghcr.io` when you want to remove them.
-
-### Platform support
-
-The supported image is the multi-architecture container published to GHCR. It includes ARM-compatible builds and is suitable for Raspberry Pi 4.
-
-For Raspberry Pi 4, prefer a 64-bit OS (`aarch64`). The image also supports ARM v7 / v8 variants, but 64-bit is the most reliable choice for modern Raspberry deployments.
+Requires Docker with Buildx and [BuildKit](https://github.com/moby/buildkit) support. Source versions are defined in `versions.yaml`; release settings are in `.env`.
 
 ### Local builds
 
-For local development and testing, build only the target platform instead of all three platforms at once. This is much faster and usually enough for daily iteration.
+Build only the target platform for faster development, and use `--load` to test locally:
 
-Example for Raspberry Pi 4:
+```bash
+# Raspberry Pi 4 with a 64-bit OS
+docker buildx build --platform linux/arm64 --load -t ghcr.io/japoch/sogo:local-test .
 
-    docker buildx build --platform linux/arm64 --load -t ghcr.io/japoch/sogo:local-test .
+# x86_64 hosts
+docker buildx build --platform linux/amd64 --load -t ghcr.io/japoch/sogo:local-test .
+```
 
-Example for x86_64 hosts:
+The Dockerfile already uses parallel compilation. Keep the build context small with `.dockerignore`.
 
-    docker buildx build --platform linux/amd64 --load -t ghcr.io/japoch/sogo:local-test .
+### Registry authentication
 
-### Build and Push
+For authenticated access to GHCR, create a personal access token (classic) under **GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)**. Use `read:packages` to pull and `write:packages` to publish. See [GitHub's authentication guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry).
 
-Update the versions in `versions.yaml` and `.env`.
+Save only the token, without quotes, in `.ghcr-token` at the repository root. The file is excluded by `.gitignore`; do not commit or share it. Replace `GITHUB_USERNAME` below with your username.
 
-Set `VERSION` in `.env` to the release version without the `v` prefix (for example, `1.1.0`). Create and push the matching Git tag with the `v` prefix:
+```powershell
+Get-Content -Raw .ghcr-token | docker login ghcr.io --username GITHUB_USERNAME --password-stdin
+```
 
-    git tag -a v1.1.0 -m "Release v1.1.0"
-    git push origin v1.1.0
+```bash
+docker login ghcr.io --username GITHUB_USERNAME --password-stdin < .ghcr-token
+```
 
-Pushing a `v*` tag triggers the GitHub Actions release build. It publishes the exact version (`1.1.0`), the `major.minor` alias (`1.1`), the major alias (`1`), and `latest` for the newest stable release. Docker Compose uses the `VERSION` from `.env` to select the exact image version.
+Docker stores the credentials locally. Remove them with `docker logout ghcr.io`.
 
-The project default release build targets the following platforms:
+### Releases
 
-    BUILD_PLATFORMS=linux/amd64,linux/arm/v7,linux/arm/v8
+Update `versions.yaml` and `.env`. Set `VERSION` in `.env` without the `v` prefix, then push a matching Git tag:
 
-This is intended for releases and publishing, not for every local development loop. For frequent edits, prefer the single-platform commands above.
+```bash
+git tag -a v1.1.0 -m "Release v1.1.0"
+git push origin v1.1.0
+```
 
-Release build (PowerShell):
+A `v*` tag triggers the GitHub Actions release build. It publishes the exact version (`1.1.0`), minor (`1.1`) and major (`1`) aliases, plus `latest` for the newest stable release. Docker Compose selects the exact version from `.env`.
 
-    Get-Content .env | ForEach-Object { if ($_ -match '^(.*?)=(.*)$') { $name = $matches[1]; $value = $matches[2]; [System.Environment]::SetEnvironmentVariable($name, $value, 'Process') } }
-    Get-Content -Raw .ghcr-token | docker login ghcr.io --username GITHUB_USERNAME --password-stdin
-    docker buildx create --name testbuilder --use
-    docker buildx build --platform $env:BUILD_PLATFORMS -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:$env:VERSION --push .
+For a manual release, authenticate as described above and use `BUILD_PLATFORMS` from `.env` (default: `linux/amd64,linux/arm/v7,linux/arm/v8`).
 
-Release build (Bash):
+PowerShell:
 
-    source .env
-    docker login ghcr.io --username GITHUB_USERNAME --password-stdin < .ghcr-token
-    docker buildx create --name testbuilder --use
-    docker buildx build --platform ${BUILD_PLATFORMS} -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:${VERSION} --push .
+```powershell
+Get-Content .env | ForEach-Object { if ($_ -match '^(.*?)=(.*)$') { $name = $matches[1]; $value = $matches[2]; [System.Environment]::SetEnvironmentVariable($name, $value, 'Process') } }
+docker buildx create --name testbuilder --use
+docker buildx build --platform $env:BUILD_PLATFORMS -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:$env:VERSION --push .
+```
 
-### Performance notes
+Bash:
 
-The build process compiles SOGo and SOPE from source. For faster local builds:
-
-- build only one platform at a time
-- use `--load` for a local image when testing
-- keep the build context small via `.dockerignore`
-- use parallel compilation with `make -j"$(nproc)"` where supported
+```bash
+source .env
+docker buildx create --name testbuilder --use
+docker buildx build --platform ${BUILD_PLATFORMS} -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:${VERSION} --push .
+```
 
 ## Usage
 
-### Usermanagement
+### User management
 
-Preparation: Set the needed environment variables like this.
+Set the user details, then run the required command:
+
 ```bash
 sogo_user='user.name'
 sogo_pass='password'
 sogo_name='User Name'
 sogo_fqhn='localhost'
+
+# List users
+docker compose exec db mysql -u sogo -ppassword -D sogo -e "SELECT * FROM sogo_view;"
+
+# Add a user
+docker compose exec db mysql -u sogo -ppassword -D sogo -e "INSERT INTO sogo_view VALUES('$sogo_user', '$sogo_user', MD5('$sogo_pass'), '$sogo_name', '$sogo_user@$sogo_fqhn');"
+
+# Change a password
+docker compose exec db mysql -u sogo -ppassword -D sogo -e "UPDATE sogo_view SET c_password=MD5('$sogo_pass') WHERE c_uid='$sogo_user';"
+
+# Remove a user
+docker compose exec db mysql -u sogo -ppassword -D sogo -e "DELETE FROM sogo_view WHERE c_uid='$sogo_user';"
 ```
 
-View the user table with `docker compose exec db mysql -u sogo -ppassword -D sogo -e "SELECT * FROM sogo_view;"`
+Upgrade the database after upgrading the database client:
 
-Insert a new user into SOGo with `docker compose exec db mysql -u sogo -ppassword -D sogo -e "INSERT INTO sogo_view VALUES('$sogo_user', '$sogo_user', MD5('$sogo_pass'), '$sogo_name', '$sogo_user@$sogo_fqhn');"`
+```bash
+docker compose exec db mariadb-upgrade -u root -ppassword
+```
 
-Update password with `docker compose exec db mysql -u sogo -ppassword -D sogo -e "UPDATE sogo_view SET c_password=MD5('$sogo_pass') WHERE c_uid='$sogo_user';"`
+### Backup and restore
 
-Remove an user from SOGo with `docker compose exec db mysql -u sogo -ppassword -D sogo -e "DELETE FROM sogo_view WHERE c_uid='$sogo_user'"`
+Open a shell with `docker compose exec sogo bash`, then use:
 
-Upgrade database after upgrade client with `docker compose exec db mariadb-upgrade -u root -ppassword`
+```bash
+# Back up all users (replace ALL with a username for one user)
+sogo-tool backup /mnt/backup ALL
 
-### Backup / Restore
+# List a user's backup
+sogo-tool restore -l /mnt/backup username
 
-Preparation: Start an Bash shell from inside SOGo's Docker container with `docker compose exec sogo bash`.
+# Restore settings, including signatures and filters
+sogo-tool restore -p /mnt/backup username
 
-Create backup of all or of one single user with `sogo-tool backup /mnt/backup [ALL | username]`.
+# Restore calendars and contacts
+sogo-tool restore -f ALL /mnt/backup username
+```
 
-List content of backup with `sogo-tool restore -l /mnt/backup username`.
+Alternatively, use SOGo's browser import/export feature.
 
-Restore parameters (signature, filters ....) with `sogo-tool restore -p /mnt/backup username`.
-
-Restore the folders (calenders and contacts) of one user with `sogo-tool restore -f ALL /mnt/backup username`.
-
-or use SOGos browser import/export function.
-
-## Known Bugs
+## Troubleshooting
 
 ### Data too long for column 'c_value'
 
-Error message
-
-    [ERROR] <0x0x55b6f2205810[GCSSessionsFolder]> -[GCSSessionsFolder writeRecordForEntryWithID:value:creationDate:lastSeenDate:]: cannot write record: <MySQL4Exception: 0x55b6f23655f0> NAME:ExecutionFailed REASON:Data too long for column 'c_value' at row 1
-
-Bug tracking
-
-    https://bugs.sogo.nu//view.php?id=5491
-    The cookie is now much bigger than before. Just bellow 4096 bytes, to accommodate longer passwords.
-
-Solution
+If session writes fail with `Data too long for column 'c_value' at row 1`, enlarge the session column to accommodate longer cookies ([SOGo issue #5491](https://bugs.sogo.nu/view.php?id=5491)):
 
 ```sql
--- Enlarging the column c_value from 255 to 4096.
-alter table sogo_sessions_folder modify c_value varchar(4096) not null;
+ALTER TABLE sogo_sessions_folder MODIFY c_value VARCHAR(4096) NOT NULL;
 ```
