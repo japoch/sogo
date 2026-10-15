@@ -27,6 +27,11 @@ on:
       - 'artifacts/**'
   workflow_dispatch:
     inputs:
+      publish_image:
+        description: Publish the versioned image to GHCR
+        type: boolean
+        required: true
+        default: false
       build_platforms:
         description: The Docker image build platforms
         type: string
@@ -43,6 +48,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  PUBLISH_IMAGE: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_image) }}
   BUILD_PLATFORMS: ${{ github.event_name == 'pull_request' && 'linux/amd64' || inputs.build_platforms || 'linux/amd64,linux/arm/v7,linux/arm/v8' }}
 
 jobs:
@@ -89,7 +95,7 @@ jobs:
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Login to the Container registry
-        if: github.event_name != 'pull_request'
+        if: env.PUBLISH_IMAGE == 'true'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -101,7 +107,8 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ env.PUBLISH_IMAGE == 'true' }}
+          outputs: ${{ env.PUBLISH_IMAGE != 'true' && 'type=cacheonly' || '' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ env.BUILD_PLATFORMS }}
@@ -109,7 +116,7 @@ jobs:
           cache-to: type=gha,scope=sogo,mode=max
 
       - name: Generate artifact attestation
-        if: github.event_name != 'pull_request' && github.event.repository.visibility == 'public'
+        if: env.PUBLISH_IMAGE == 'true' && github.event.repository.visibility == 'public'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
