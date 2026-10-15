@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replace the ARMv8 32-bit build target with ARM64, retaining ARMv7 and AMD64; simplify the README and document Raspberry Pi OS requirements.
 - Publish Docker images only under the complete version from `.env`, validating matching Git release tags.
 - Use native workflow path filters, cached build layers, and AMD64-only pull request builds to reduce CI work.
 - Make publishing opt-in for manual Docker workflow runs with the `publish_image` switch.
