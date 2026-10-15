@@ -92,7 +92,7 @@ git push origin v1.1.0
 
 A `v*` tag triggers the GitHub Actions release build and must match `VERSION` in `.env`. The workflow publishes only the complete version, for example `ghcr.io/japoch/sogo:1.1.0` or `ghcr.io/japoch/sogo:1.1.0-rc.1`. Docker Compose selects the same version from `.env`.
 
-Relevant pushes to `main` and manual workflow runs also publish `VERSION` from `.env`, replacing that image tag if it already exists. Pull requests only build an AMD64 test image. Published builds use all configured platforms, and GitHub Actions caches build layers between runs.
+Relevant pushes to `main` also publish `VERSION` from `.env`, replacing that image tag if it already exists. Manual workflow runs default to a build test; enable `publish_image` to publish to GHCR. Select the feature branch and desired `build_platforms` when testing. Pull requests only build an AMD64 test image. Published builds use all configured platforms, and GitHub Actions caches build layers between runs.
 
 For a manual release, authenticate as described above and use `BUILD_PLATFORMS` from `.env` (default: `linux/amd64,linux/arm/v7,linux/arm/v8`).
 

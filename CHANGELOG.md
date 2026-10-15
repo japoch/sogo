@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Publish Docker images only under the complete version from `.env`, validating matching Git release tags.
 - Use native workflow path filters, cached build layers, and AMD64-only pull request builds to reduce CI work.
+- Make publishing opt-in for manual Docker workflow runs with the `publish_image` switch.
 
 ## [1.1.0]
 
