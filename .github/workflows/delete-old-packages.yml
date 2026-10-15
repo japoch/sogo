@@ -8,37 +8,47 @@ on:
         type: string
         required: true
         default: sogo
+      keep_versions:
+        description: Number of newest release-only image versions to keep (at least 1)
+        type: number
+        required: true
+        default: 2
+      dry_run:
+        description: Preview deletions without changing the package
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-cleanup-${{ inputs.package_name }}
+  cancel-in-progress: false
 
 jobs:
   delete:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
+      contents: read
       packages: write
     steps:
-      # delete-package-versions v5 still requires the deprecated Node.js 20.
-      - name: Delete old package versions
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Test cleanup logic
+        run: node --test .github/scripts/test_delete_old_packages.cjs
+
+      - name: Clean up old release versions
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PACKAGE_NAME: ${{ inputs.package_name }}
+          KEEP_VERSIONS: ${{ inputs.keep_versions }}
+          DRY_RUN: ${{ inputs.dry_run }}
         with:
           script: |
-            const scope = context.payload.repository.owner.type === 'Organization' ? 'orgs' : 'users';
-            const route = `/${scope}/{owner}/packages/{package_type}/{package_name}/versions`;
-            const params = {
-              owner: context.repo.owner,
-              package_type: 'container',
-              package_name: process.env.PACKAGE_NAME,
-              per_page: 100,
-            };
-            const versions = await github.paginate(`GET ${route}`, params);
-            versions.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
-            // Preserve the existing policy: keep two versions, delete at most 100.
-            const obsolete = versions.slice(2).reverse().slice(0, 100);
-            for (const version of obsolete) {
-              core.info(`Deleting package version ${version.id}`);
-              await github.request(`DELETE ${route}/{package_version_id}`, {
-                ...params,
-                package_version_id: version.id,
-              });
-            }
-            core.info(`Deleted ${obsolete.length} package versions; kept the two newest.`);
+            const { cleanupPackages } = require('./.github/scripts/delete-old-packages.cjs');
+            await cleanupPackages({ github, context, core, env: process.env });

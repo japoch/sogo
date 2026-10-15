@@ -114,6 +114,14 @@ docker buildx build --platform ${BUILD_PLATFORMS} -t ghcr.io/japoch/sogo:${VERSI
 
 ## Usage
 
+### Container image cleanup
+
+Run **Delete old Docker images** manually to preview cleanup candidates. `dry_run` defaults to `true`; set it to `false` to delete them. `keep_versions` defaults to `2` and keeps the newest release-only image versions by creation date, with at most 100 deletions per run.
+
+Only images whose tags are all complete versions (such as `1.1.0` or `1.2.0-rc.1`) are eligible. Untagged entries are retained because they can contain platform manifests or attestations needed by multiarch images. Versions with aliases such as `latest`, `main`, or `1.1` are also retained. This does not garbage-collect orphaned manifests. Review the workflow summary for the selected versions and deletion results.
+
+The repository's `GITHUB_TOKEN` needs **Admin** access to the container package under **Package settings → Manage Actions access**, in addition to the workflow's `packages: write` permission. See [GitHub's package deletion permissions](https://docs.github.com/en/packages/learn-github-packages/deleting-and-restoring-a-package).
+
 ### User management
 
 Set the user details, then run the required command:
