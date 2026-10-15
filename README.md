@@ -20,7 +20,7 @@ docker compose logs -f
 To run the SOGo container separately (requires an external database):
 
 ```bash
-docker run --rm --name sogo ghcr.io/japoch/sogo:latest
+docker run --rm --name sogo ghcr.io/japoch/sogo:1.1.0
 ```
 
 Optionally, manage the Compose stack through systemd:
@@ -90,7 +90,9 @@ git tag -a v1.1.0 -m "Release v1.1.0"
 git push origin v1.1.0
 ```
 
-A `v*` tag triggers the GitHub Actions release build. It publishes the exact version (`1.1.0`), minor (`1.1`) and major (`1`) aliases, plus `latest` for the newest stable release. Docker Compose selects the exact version from `.env`.
+A `v*` tag triggers the GitHub Actions release build and must match `VERSION` in `.env`. The workflow publishes only the complete version, for example `ghcr.io/japoch/sogo:1.1.0` or `ghcr.io/japoch/sogo:1.1.0-rc.1`. Docker Compose selects the same version from `.env`.
+
+Relevant pushes to `main` and manual workflow runs also publish `VERSION` from `.env`, replacing that image tag if it already exists. Pull requests only build an AMD64 test image. Published builds use all configured platforms, and GitHub Actions caches build layers between runs.
 
 For a manual release, authenticate as described above and use `BUILD_PLATFORMS` from `.env` (default: `linux/amd64,linux/arm/v7,linux/arm/v8`).
 
@@ -99,7 +101,7 @@ PowerShell:
 ```powershell
 Get-Content .env | ForEach-Object { if ($_ -match '^(.*?)=(.*)$') { $name = $matches[1]; $value = $matches[2]; [System.Environment]::SetEnvironmentVariable($name, $value, 'Process') } }
 docker buildx create --name testbuilder --use
-docker buildx build --platform $env:BUILD_PLATFORMS -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:$env:VERSION --push .
+docker buildx build --platform $env:BUILD_PLATFORMS -t ghcr.io/japoch/sogo:$env:VERSION --push .
 ```
 
 Bash:
@@ -107,7 +109,7 @@ Bash:
 ```bash
 source .env
 docker buildx create --name testbuilder --use
-docker buildx build --platform ${BUILD_PLATFORMS} -t ghcr.io/japoch/sogo:latest -t ghcr.io/japoch/sogo:${VERSION} --push .
+docker buildx build --platform ${BUILD_PLATFORMS} -t ghcr.io/japoch/sogo:${VERSION} --push .
 ```
 
 ## Usage
