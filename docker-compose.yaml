@@ -23,7 +23,6 @@ services:
   db:
     image: linuxserver/mariadb:11.4.5
     platform: ${PLATFORM:-linux/amd64}
-    init: true
     expose:
       - "3306"
     environment:
@@ -81,7 +80,6 @@ services:
   phpmyadmin:
     image: linuxserver/phpmyadmin:5.2.2
     platform: ${PLATFORM:-linux/amd64}
-    init: true
     ports:
       - "${PORT_PHPMYADMIN_HTTP:-8081}:80"
     environment:

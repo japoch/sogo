@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Remove Compose's additional init process from MariaDB and phpMyAdmin so their s6 init can run as PID 1.
+
 ### Changed
 
 - Replace the ARMv8 32-bit build target with ARM64, retaining ARMv7 and AMD64; simplify the README and document Raspberry Pi OS requirements.
