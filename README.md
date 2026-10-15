@@ -106,9 +106,13 @@ On a Linux builder, cross-platform builds may require [QEMU setup](https://docs.
 
 ### Container image cleanup
 
-Run **Delete old Docker images** manually. It previews candidates by default (`dry_run: true`); set `dry_run: false` to delete them. `keep_versions: 2` retains the two newest eligible versions by creation date, with at most 100 deletions per run.
+Run **Delete old Docker images** manually. It previews candidates by default (`dry_run: true`); set `dry_run: false` to delete them. `keep_versions: 2` retains the two newest release-only versions by creation date. `min_age_hours: 168` protects versions created or updated within the last seven days (minimum setting: 24 hours).
 
-Only images tagged exclusively with complete versions are eligible. Untagged manifests and attestations, including orphans, and images with aliases such as `latest` or `main` are retained. Review the workflow summary for candidates and results.
+The workflow reads and verifies the GHCR manifests before selecting older release-only versions and untagged orphans. All tagged images, including aliases, and recent uploads protect their referenced platform manifests, nested indexes, and attestations. Tagged versions with aliases such as `latest` or `main` are never deleted. Keep a protected alias tag for images used only by digest; digest-only consumers cannot be detected.
+
+At most 100 releases and orphans are deleted per run, with orphaned parents removed before their dependencies. Children of a release deleted in this run become eligible on a subsequent run. Cyclic references are retained. Orphaned indexes may be removed even if some children are already absent from both GHCR and the package inventory; missing children of protected images stop cleanup. The summary separates release and orphan candidates and reports protected and deferred versions.
+
+Publishing and cleanup share a GitHub Actions concurrency group. Use the updated versions of both workflows and let older publishing runs finish before deleting. Do not publish from local machines or other repositories during cleanup: the lock covers only this repository's workflows. The script rechecks the package inventory before each deletion and aborts on changes, unreadable manifests, or unsupported formats; registry reads and deletion are not an atomic transaction.
 
 The repository's `GITHUB_TOKEN` needs **Admin** access to the container package under **Package settings → Manage Actions access**, in addition to the workflow's `packages: write` permission. See [GitHub's package deletion permissions](https://docs.github.com/en/packages/learn-github-packages/deleting-and-restoring-a-package).
 

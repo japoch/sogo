@@ -43,7 +43,8 @@ This repository packages SOGo rather than maintaining its upstream application s
 - Pin third-party actions to full commit SHAs with a version comment. Verify the upstream release and supported runtime when updating a pin. Keep permissions scoped to each job's needs.
 - Codacy uses Opengrep, Pylint, and Trivy. Keep its CLI version, scanner configuration, and workflow matrix compatible. When renaming a scanner, check required code-scanning tool names in repository rules; do not silently weaken those rules.
 - Scanner failures must fail CI. SARIF normalization must retain findings and reject failed or empty scanner runs rather than manufacturing a successful report. A valid scan with zero findings is acceptable.
-- Package cleanup must default to a preview. Preserve untagged manifests and attestations, plus versions with alias tags; untagged does not mean unused in a multiarch image.
+- Package cleanup must default to a preview. Preserve referenced manifests and attestations, recent uploads, and versions with alias tags. Delete untagged entries only after inspecting the manifest graph and applying the grace period; untagged does not mean unused in a multiarch image.
+- Keep cleanup and publishing in the same concurrency group. External publishers must remain idle during deletion; inventory rechecks cannot make registry reads and deletes atomic.
 - Preserve cleanup retention, the per-run deletion cap, candidate revalidation, and failure propagation. Test deletion logic with mocked API calls, not live package deletion.
 
 ## Validation

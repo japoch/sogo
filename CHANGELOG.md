@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Detect and remove untagged GHCR orphans using verified manifest references, a configurable grace period, and dependency-ordered deletion. Serialize cleanup with image publishing and stop if the package inventory changes.
+
 ### Fixed
 
 - Remove Compose's additional init process from MariaDB and phpMyAdmin so their s6 init can run as PID 1.

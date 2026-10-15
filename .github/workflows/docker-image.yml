@@ -54,6 +54,10 @@ env:
 jobs:
   sogo:
     runs-on: ubuntu-24.04
+    # Publishing and package cleanup must never modify GHCR concurrently.
+    concurrency:
+      group: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_image)) && format('ghcr-maintenance-{0}', github.repository) || format('docker-test-{0}', github.run_id) }}
+      cancel-in-progress: false
     permissions:
       contents: read
       packages: write
