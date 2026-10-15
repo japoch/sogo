@@ -11,5 +11,5 @@ tools:
     - pmd@7.11.0
     - pylint@3.3.6
     - revive@1.7.0
-    - semgrep@1.78.0
-    - trivy@0.65.0
+    - opengrep@1.16.4
+    - trivy@0.69.3

@@ -1,70 +1,53 @@
-# This workflow checks out code, performs a Codacy security scan
-# and integrates the results with the
-# GitHub Advanced Security code scanning feature.  For more information on
-# the Codacy security scan action usage and parameters, see
-# https://github.com/codacy/codacy-analysis-cli-action.
-# For more information on Codacy Analysis CLI in general, see
-# https://github.com/codacy/codacy-analysis-cli.
-
 name: Codacy Security Scan
 
 on:
   workflow_dispatch:
   push:
-    branches: [ "main", "develop" ]
+    branches: [main, develop]
   pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main" ]
-  # schedule:
-  #   - cron: '24 23 * * 0'
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
   codacy-security-scan:
+    name: Codacy Security Scan (${{ matrix.codacy_tool }})
+    runs-on: ubuntu-24.04
     permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-    name: Codacy Security Scan
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
+      contents: read
+      security-events: write
+      actions: read
+    env:
+      CODACY_CLI_V2_VERSION: 1.0.0-main.382.sha.473b61c
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - codacy_tool: pylint
-        - codacy_tool: semgrep
-        - codacy_tool: trivy
+        codacy_tool: [pylint, opengrep, trivy]
     steps:
-      # Checkout the repository to the GitHub Actions runner
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
       - name: Run Codacy Analysis CLI
         env:
-          TOOL: ${{matrix.codacy_tool}}
-          FORMAT: sarif
+          TOOL: ${{ matrix.codacy_tool }}
+          CODACY_CLI_V2_TMP_FOLDER: ${{ runner.temp }}/codacy-cli
+        shell: bash
         run: |
-          echo "::group::Analyze with tool ${TOOL}"
-          .codacy/cli.sh analyze --tool ${TOOL} --format ${FORMAT} --output ${TOOL}.sarif
-          echo "::endgroup::"
-          echo "::group::Fix sarif file"
-          echo "Fix: instance.runs[0].tool.driver.rules is not of a type(s) array"
-          sed -i 's/"rules": null/"rules": []/g' ${TOOL}.sarif
-          echo "::endgroup::"
-          echo "::group::Display results"
-          ls -la
-          cat ${TOOL}.sarif
-          echo "::endgroup::"
+          .codacy/cli.sh analyze --tool "$TOOL" --format sarif --output "$TOOL.sarif" 2>&1 | tee "$RUNNER_TEMP/codacy.log"
+          # The CLI can return success even when an individual scanner fails.
+          if grep -q 'Tool failed to run:' "$RUNNER_TEMP/codacy.log"; then
+            echo "::error::Codacy failed to run $TOOL; see the scanner log above."
+            exit 1
+          fi
 
-      # Upload the SARIF file generated in the previous step
-      - name: Upload SARIF results file
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Normalize SARIF report
+        env:
+          TOOL: ${{ matrix.codacy_tool }}
+        run: python3 .github/scripts/normalize-sarif.py "$TOOL.sarif"
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
-          sarif_file: ${{matrix.codacy_tool}}.sarif
-          category: ${{matrix.codacy_tool}}
+          sarif_file: ${{ matrix.codacy_tool }}.sarif
+          category: ${{ matrix.codacy_tool }}

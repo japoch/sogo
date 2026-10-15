@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       package_name:
-        description: The name of the package to delete
+        description: The container package whose old versions will be deleted
         type: string
         required: true
         default: sogo
@@ -15,8 +15,30 @@ jobs:
     permissions:
       packages: write
     steps:
-    - uses: actions/delete-package-versions@v5
-      with: 
-        package-name: ${{ inputs.package_name }}
-        package-type: container
-        min-versions-to-keep: 2
+      # delete-package-versions v5 still requires the deprecated Node.js 20.
+      - name: Delete old package versions
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PACKAGE_NAME: ${{ inputs.package_name }}
+        with:
+          script: |
+            const scope = context.payload.repository.owner.type === 'Organization' ? 'orgs' : 'users';
+            const route = `/${scope}/{owner}/packages/{package_type}/{package_name}/versions`;
+            const params = {
+              owner: context.repo.owner,
+              package_type: 'container',
+              package_name: process.env.PACKAGE_NAME,
+              per_page: 100,
+            };
+            const versions = await github.paginate(`GET ${route}`, params);
+            versions.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+            // Preserve the existing policy: keep two versions, delete at most 100.
+            const obsolete = versions.slice(2).reverse().slice(0, 100);
+            for (const version of obsolete) {
+              core.info(`Deleting package version ${version.id}`);
+              await github.request(`DELETE ${route}/{package_version_id}`, {
+                ...params,
+                package_version_id: version.id,
+              });
+            }
+            core.info(`Deleted ${obsolete.length} package versions; kept the two newest.`);

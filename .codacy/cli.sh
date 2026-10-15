@@ -112,7 +112,7 @@ if [ -n "$CODACY_CLI_V2_VERSION" ] && [ "$1" = "update" ]; then
 fi
 
 # Ensure version.yaml exists and is up to date
-if [ ! -f "$version_file" ] || [ "$1" = "update" ]; then
+if [ -z "$CODACY_CLI_V2_VERSION" ] && { [ ! -f "$version_file" ] || [ "$1" = "update" ]; }; then
     echo "ℹ️  Fetching latest version..."
     version=$(get_latest_version)
     mkdir -p "$CODACY_CLI_V2_TMP_FOLDER"
