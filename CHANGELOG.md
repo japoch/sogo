@@ -11,13 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove Compose's additional init process from MariaDB and phpMyAdmin so their s6 init can run as PID 1.
 
+## [1.2.0] - 2026-10-15
+
 ### Changed
 
-- Replace the ARMv8 32-bit build target with ARM64, retaining ARMv7 and AMD64; simplify the README and document Raspberry Pi OS requirements.
-- Publish Docker images only under the complete version from `.env`, validating matching Git release tags.
-- Use native workflow path filters, cached build layers, and AMD64-only pull request builds to reduce CI work.
-- Make publishing opt-in for manual Docker workflow runs with the `publish_image` switch.
-- Limit package cleanup to older release-only image versions, preserving untagged manifests and aliases. Add configurable retention, a default preview mode, and cleanup summaries.
+- Set the Compose image version to `1.2.0` in `.env`.
+- Replaced the ARMv8 32-bit build target with ARM64, retaining ARMv7 and AMD64; simplified the README and documented Raspberry Pi OS requirements.
+- Published Docker images only under the complete version from `.env`, validating matching Git release tags.
+- Added native workflow path filters, cached build layers, and AMD64-only pull request builds to reduce CI work.
+- Made publishing opt-in for manual Docker workflow runs with the `publish_image` switch.
+- Enabled CodeQL and Codacy scans on `feature/**` branches.
+- Limited package cleanup to older release-only image versions, preserving untagged manifests and aliases. Added configurable retention, a default preview mode, and cleanup summaries.
+
+### Fixed
+
+- Updated deprecated GitHub Actions to Node.js 24-compatible versions and CodeQL Action v4.
+- Fixed Codacy execution and SARIF uploads by replacing Semgrep with Opengrep, updating Trivy, and validating and normalizing reports.
 
 ## [1.1.0]
 
@@ -107,7 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated SOGo to 5.10.0.
 
-[Unreleased]: https://github.com/japoch/SOGo/compare/v1.1.0...main
+[Unreleased]: https://github.com/japoch/SOGo/compare/v1.2.0...main
+[1.2.0]: https://github.com/japoch/SOGo/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/japoch/SOGo/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/japoch/SOGo/compare/v0.0.9...v1.0.0
 [0.0.9]: https://github.com/japoch/SOGo/compare/0.0.8...v0.0.9
