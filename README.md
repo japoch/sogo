@@ -6,11 +6,23 @@
 
 [SOGo](http://www.sogo.nu) is an open-source groupware server licensed under GNU GPL/LGPL v2 and above. This image builds [SOGo](https://github.com/Alinto/sogo) and [SOPE](https://github.com/Alinto/sope) from source and includes NGINX and memcached.
 
-Images are available on [GHCR](https://github.com/japoch/sogo/pkgs/container/sogo) for `linux/amd64`, `linux/arm/v7`, and `linux/arm/v8`. Tested on Raspberry Pi 4, Banana Pi, and WSL. A 64-bit OS (`aarch64`) is recommended for Raspberry Pi 4.
+Images are published to [GHCR](https://github.com/japoch/sogo/pkgs/container/sogo) under the complete release version, such as `1.2.0`.
+
+## Platforms
+
+Release builds target these platforms:
+
+| Host | Docker platform |
+| --- | --- |
+| x86-64 Linux (Intel/AMD) | `linux/amd64` |
+| Raspberry Pi 3 or 4 with a 32-bit OS | `linux/arm/v7` |
+| Raspberry Pi 3 or 4 with a 64-bit OS | `linux/arm64` |
+
+Both Pi models support [Raspberry Pi OS (64-bit)](https://www.raspberrypi.com/news/raspberry-pi-os-64-bit/). Use it for ARM64 containers; `linux/arm/v8` is not an ARM64 target. Docker selects the matching image from the release tag automatically.
 
 ## Setup
 
-Start the provided Docker Compose stack:
+Set the image `VERSION` in `.env`, then start the Docker Compose stack. On Raspberry Pi, also set `PLATFORM` to the value from the table: the database, mail, and phpMyAdmin services otherwise default to AMD64. These third-party images must support the selected architecture; the SOGo build does not establish compatibility for the whole stack.
 
 ```bash
 docker compose up -d
@@ -20,7 +32,7 @@ docker compose logs -f
 To run the SOGo container separately (requires an external database):
 
 ```bash
-docker run --rm --name sogo ghcr.io/japoch/sogo:1.1.0
+docker run --rm --name sogo ghcr.io/japoch/sogo:1.2.0
 ```
 
 Optionally, manage the Compose stack through systemd:
@@ -49,76 +61,54 @@ openssl req -newkey rsa:4096 -sha512 -x509 -days 365 -nodes \
 
 ## Build
 
-Requires Docker with Buildx and [BuildKit](https://github.com/moby/buildkit) support. Source versions are defined in `versions.yaml`; release settings are in `.env`.
+Requires Docker with Buildx. SOGo and SOPE source versions are set in `versions.yaml`; the image version and local build platforms are set in `.env`.
 
 ### Local builds
 
-Build only the target platform for faster development, and use `--load` to test locally:
+Build and load a single platform for local testing. Choose `--platform` from the table above; this example targets a Raspberry Pi with a 64-bit OS:
 
 ```bash
-# Raspberry Pi 4 with a 64-bit OS
 docker buildx build --platform linux/arm64 --load -t ghcr.io/japoch/sogo:local-test .
-
-# x86_64 hosts
-docker buildx build --platform linux/amd64 --load -t ghcr.io/japoch/sogo:local-test .
 ```
 
-The Dockerfile already uses parallel compilation. Keep the build context small with `.dockerignore`.
+### Releases with GitHub Actions
 
-### Registry authentication
+Update `VERSION` in `.env` and, when needed, the source versions in `versions.yaml` before merging the PR into `main`.
 
-For authenticated access to GHCR, create a personal access token (classic) under **GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)**. Use `read:packages` to pull and `write:packages` to publish. See [GitHub's authentication guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry).
+| Trigger | Build | Publish to GHCR |
+| --- | --- | --- |
+| Merge or push to `main` changing build inputs¹ | All three platforms | Yes |
+| Push a `v*` tag matching `.env`, e.g. `v1.2.0` | All three platforms | Yes |
+| Pull request to `main` or `release/**` changing build inputs¹ | AMD64 | No |
+| Manual workflow run | Selected `build_platforms` (default: all three) | Only with `publish_image: true` |
 
-Save only the token, without quotes, in `.ghcr-token` at the repository root. The file is excluded by `.gitignore`; do not commit or share it. Replace `GITHUB_USERNAME` below with your username.
+¹ Build inputs: `Dockerfile`, `.dockerignore`, `.env`, `versions.yaml`, the Docker workflow, and files in `sogo-conf/`, `nginx-conf/`, or `artifacts/`.
 
-```powershell
-Get-Content -Raw .ghcr-token | docker login ghcr.io --username GITHUB_USERNAME --password-stdin
-```
+The workflow publishes only the complete version tag, without `latest`, major, or minor aliases. Publishing the same version again replaces that tag, so a matching Git tag is optional after a merge build. Manual runs can test a feature branch without publishing. Builds reuse the GitHub Actions layer cache.
+
+### Publish locally
+
+Create a personal access token (classic) with `write:packages` and save it in the ignored `.ghcr-token` file. For authenticated pulls only, `read:packages` is sufficient; see [GHCR authentication](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry). Replace `GITHUB_USERNAME` with your username.
+
+Run in Bash with a Buildx builder supporting the target platforms:
 
 ```bash
 docker login ghcr.io --username GITHUB_USERNAME --password-stdin < .ghcr-token
-```
-
-Docker stores the credentials locally. Remove them with `docker logout ghcr.io`.
-
-### Releases
-
-Update `versions.yaml` and `.env`. Set `VERSION` in `.env` without the `v` prefix, then push a matching Git tag:
-
-```bash
-git tag -a v1.1.0 -m "Release v1.1.0"
-git push origin v1.1.0
-```
-
-A `v*` tag triggers the GitHub Actions release build and must match `VERSION` in `.env`. The workflow publishes only the complete version, for example `ghcr.io/japoch/sogo:1.1.0` or `ghcr.io/japoch/sogo:1.1.0-rc.1`. Docker Compose selects the same version from `.env`.
-
-Relevant pushes to `main` also publish `VERSION` from `.env`, replacing that image tag if it already exists. Manual workflow runs default to a build test; enable `publish_image` to publish to GHCR. Select the feature branch and desired `build_platforms` when testing. Pull requests only build an AMD64 test image. Published builds use all configured platforms, and GitHub Actions caches build layers between runs.
-
-For a manual release, authenticate as described above and use `BUILD_PLATFORMS` from `.env` (default: `linux/amd64,linux/arm/v7,linux/arm/v8`).
-
-PowerShell:
-
-```powershell
-Get-Content .env | ForEach-Object { if ($_ -match '^(.*?)=(.*)$') { $name = $matches[1]; $value = $matches[2]; [System.Environment]::SetEnvironmentVariable($name, $value, 'Process') } }
-docker buildx create --name testbuilder --use
-docker buildx build --platform $env:BUILD_PLATFORMS -t ghcr.io/japoch/sogo:$env:VERSION --push .
-```
-
-Bash:
-
-```bash
 source .env
-docker buildx create --name testbuilder --use
-docker buildx build --platform ${BUILD_PLATFORMS} -t ghcr.io/japoch/sogo:${VERSION} --push .
+docker buildx create --name sogo-builder --driver docker-container --use # once
+docker buildx build --platform "$BUILD_PLATFORMS" -t "ghcr.io/japoch/sogo:$VERSION" --push .
+docker logout ghcr.io
 ```
+
+On a Linux builder, cross-platform builds may require [QEMU setup](https://docs.docker.com/build/building/multi-platform/#qemu). GitHub Actions configures it automatically.
 
 ## Usage
 
 ### Container image cleanup
 
-Run **Delete old Docker images** manually to preview cleanup candidates. `dry_run` defaults to `true`; set it to `false` to delete them. `keep_versions` defaults to `2` and keeps the newest release-only image versions by creation date, with at most 100 deletions per run.
+Run **Delete old Docker images** manually. It previews candidates by default (`dry_run: true`); set `dry_run: false` to delete them. `keep_versions: 2` retains the two newest eligible versions by creation date, with at most 100 deletions per run.
 
-Only images whose tags are all complete versions (such as `1.1.0` or `1.2.0-rc.1`) are eligible. Untagged entries are retained because they can contain platform manifests or attestations needed by multiarch images. Versions with aliases such as `latest`, `main`, or `1.1` are also retained. This does not garbage-collect orphaned manifests. Review the workflow summary for the selected versions and deletion results.
+Only images tagged exclusively with complete versions are eligible. Untagged manifests and attestations, including orphans, and images with aliases such as `latest` or `main` are retained. Review the workflow summary for candidates and results.
 
 The repository's `GITHUB_TOKEN` needs **Admin** access to the container package under **Package settings → Manage Actions access**, in addition to the workflow's `packages: write` permission. See [GitHub's package deletion permissions](https://docs.github.com/en/packages/learn-github-packages/deleting-and-restoring-a-package).
 

@@ -36,7 +36,7 @@ on:
         description: The Docker image build platforms
         type: string
         required: true
-        default: linux/amd64,linux/arm/v7,linux/arm/v8
+        default: linux/amd64,linux/arm/v7,linux/arm64
 
 permissions:
   contents: read
@@ -49,7 +49,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   PUBLISH_IMAGE: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_image) }}
-  BUILD_PLATFORMS: ${{ github.event_name == 'pull_request' && 'linux/amd64' || inputs.build_platforms || 'linux/amd64,linux/arm/v7,linux/arm/v8' }}
+  BUILD_PLATFORMS: ${{ github.event_name == 'pull_request' && 'linux/amd64' || inputs.build_platforms || 'linux/amd64,linux/arm/v7,linux/arm64' }}
 
 jobs:
   sogo:
