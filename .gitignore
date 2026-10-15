@@ -19,3 +19,6 @@ reverse-proxy/*
 
 # Local GitHub Container Registry token
 .ghcr-token
+
+# Local GitHub token for workflow diagnostics
+.github-token
