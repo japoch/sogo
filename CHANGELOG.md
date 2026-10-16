@@ -7,15 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-16
+
+### Added
+
+- Automatically create matching Git tags and GitHub releases after verified image publication, using version-specific changelog notes.
+- Reuse verified images on retries and reject conflicting tags, image revisions, or platforms before publishing.
+
+### Changed
+
+- Set the Compose image version to `1.3.0` in `.env`.
+- Updated CodeQL Action to `v4.39.0` in the CodeQL and Codacy workflows.
+- Streamlined release documentation and repository guidance.
+
+## [1.2.0] - 2026-10-15
+
 ### Added
 
 - Detect and remove untagged GHCR orphans using verified manifest references, a configurable grace period, and dependency-ordered deletion. Serialize cleanup with image publishing and stop if the package inventory changes.
-
-### Fixed
-
-- Remove Compose's additional init process from MariaDB and phpMyAdmin so their s6 init can run as PID 1.
-
-## [1.2.0] - 2026-10-15
 
 ### Changed
 
@@ -29,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Remove Compose's additional init process from MariaDB and phpMyAdmin so their s6 init can run as PID 1.
 - Updated deprecated GitHub Actions to Node.js 24-compatible versions and CodeQL Action v4.
 - Fixed Codacy execution and SARIF uploads by replacing Semgrep with Opengrep, updating Trivy, and validating and normalizing reports.
 
@@ -120,7 +130,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated SOGo to 5.10.0.
 
-[Unreleased]: https://github.com/japoch/SOGo/compare/v1.2.0...main
+[Unreleased]: https://github.com/japoch/SOGo/compare/v1.3.0...main
+[1.3.0]: https://github.com/japoch/SOGo/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/japoch/SOGo/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/japoch/SOGo/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/japoch/SOGo/compare/v0.0.9...v1.0.0
