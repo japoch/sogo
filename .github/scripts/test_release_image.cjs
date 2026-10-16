@@ -155,6 +155,26 @@ test('single-platform manual images are verified too', async () => {
   assert.equal(await verifyImage(f.options), DIGEST);
 });
 
+test('GHCR descriptions must be present on the image index, not just config labels', async () => {
+  const f = fixture();
+  f.options.expectedDescription = 'SOGo groupware';
+  for (const config of f.configs) config.config.Labels['org.opencontainers.image.description'] = 'SOGo groupware';
+  await assert.rejects(verifyImage(f.options), /index description is missing/);
+  f.index.annotations = { 'org.opencontainers.image.description': 'Another description' };
+  await assert.rejects(verifyImage(f.options), /differs from IMAGE_DESCRIPTION/);
+  f.index.annotations['org.opencontainers.image.description'] = 'SOGo groupware';
+  assert.equal(await verifyImage(f.options), DIGEST);
+});
+
+test('empty and oversized GHCR descriptions are rejected', async () => {
+  for (const description of ['', '   ', 'a'.repeat(513)]) {
+    const f = fixture();
+    f.options.expectedDescription = description;
+    f.index.annotations = { 'org.opencontainers.image.description': description };
+    await assert.rejects(verifyImage(f.options), /1 to 512 characters/);
+  }
+});
+
 test('BuildKit attestations do not count as runtime platforms', async () => {
   const f = fixture();
   const attestation = { digest: digest(99), platform: { os: 'unknown', architecture: 'unknown' }, annotations: {
