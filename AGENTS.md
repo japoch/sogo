@@ -2,54 +2,51 @@
 
 ## Scope and working style
 
-These instructions apply throughout this repository. Follow the user's requested scope and preserve existing local changes, including temporary version overrides in `.env`.
+Applies repository-wide. Preserve local changes, including temporary `.env` version overrides.
 
 - Respond in the user's language; keep repository documentation, code comments, and commit messages in English.
-- Make focused changes and follow the surrounding file's style. Avoid unrelated dependency updates or formatting changes.
-- Inspect the current branch and diff before editing or committing. Stage specific files so local deployment settings are not accidentally committed.
-- Commit, push, merge, publish images, or delete packages only within the user's authorized scope. Existing authorization does not need to be requested again.
-- Keep operational instructions in [README.md](README.md). Add user-visible changes under `Unreleased` in [CHANGELOG.md](CHANGELOG.md); move only changes included in a release into its version section.
+- Stay within the requested scope and surrounding style; avoid unrelated dependency or formatting changes.
+- Inspect the branch and diff before editing or committing. Stage specific files to avoid committing local deployment settings accidentally.
+- Commit, push, merge, publish images, or delete packages only as authorized; do not request existing authorization again.
+- Keep operational instructions in [README.md](README.md) and user-visible changes under `Unreleased` in [CHANGELOG.md](CHANGELOG.md). Move only changes included in a release into its version section.
 
 ## Project map
 
-This repository packages SOGo rather than maintaining its upstream application source.
+This repository packages SOGo; it does not maintain upstream application source.
 
 | Path | Purpose |
 | --- | --- |
-| `Dockerfile` | Builds SOPE and SOGo from source on Debian and assembles the runtime image |
-| `versions.yaml` | Upstream SOPE and SOGo Git tags; these differ from the container release version |
-| `.env` | Tracked Compose defaults, container `VERSION`, and local `BUILD_PLATFORMS` |
-| `docker-compose.yaml` | SOGo, MariaDB, Dovecot, and phpMyAdmin services and persistent storage |
-| `sogo-conf/`, `nginx-conf/` | Application and proxy configuration, also mounted by Compose |
-| `artifacts/` | Startup, backup, user-management, cron, and service files; consult the Dockerfile for files actually copied into the image |
+| `Dockerfile` | Debian-based SOPE/SOGo source build and runtime image |
+| `versions.yaml` | Upstream Git tags, separate from the container version |
+| `.env` | Tracked Compose defaults, `VERSION`, and local `BUILD_PLATFORMS` |
+| `docker-compose.yaml` | SOGo, MariaDB, Dovecot, phpMyAdmin, and persistent storage |
+| `sogo-conf/`, `nginx-conf/` | Application/proxy configuration, also mounted by Compose |
+| `artifacts/` | Startup, backup, user-management, cron, and service files; the Dockerfile determines which enter the image |
 | `.github/workflows/` | Image publishing, security scans, and manual package cleanup |
-| `.github/scripts/` | SARIF normalization and package-cleanup helpers with regression tests |
+| `.github/scripts/` | SARIF, release, and package-cleanup helpers and regression tests |
 | `.codacy/` | Codacy CLI bootstrap and pinned scanner configuration |
 
 ## Container and release constraints
 
-- Keep release targets consistent between `.env` and both platform defaults in `docker-image.yml`: `linux/amd64`, `linux/arm/v7`, and `linux/arm64`. `linux/arm/v8` is not ARM64.
-- Raspberry Pi 3 and 4 can use ARM64 with a 64-bit OS. Check the exact tags of all third-party Compose images before claiming that the entire stack supports a platform. A successful SOGo build alone is insufficient.
-- Compose currently defaults the database, mail, and phpMyAdmin services to AMD64 via `PLATFORM`. Account for that setting when diagnosing Raspberry Pi deployments.
-- Do not enable Compose `init: true` for the LinuxServer MariaDB or phpMyAdmin images: their integrated s6 init must be PID 1. Evaluate other images separately.
-- Preserve persistent mounts, health checks, and dependency ordering when editing Compose. Avoid deleting data or volumes during troubleshooting; never use `docker compose down -v` as a routine reset.
-- Publish only the complete `.env` version as the image tag. Do not introduce `latest`, major, or minor aliases. A release Git tag must be `v` followed by that version.
-- Preserve Docker workflow path filters. Compose-only and documentation-only changes should not trigger an image build on PRs or merges. Do not bump `.env` merely to deliver a Compose or documentation fix.
-- PR image builds test AMD64 without publishing. Manual builds default to `publish_image: false`; relevant pushes to `main` and matching release-tag pushes publish. Tag pushes bypass path filters.
-- A changed `VERSION` does not mean an image exists yet. For release verification, check the run for the actual commit, then the GHCR manifest, platform list, version label, and revision label. Report pending builds as pending.
+- Keep `.env` and both platform defaults in `docker-image.yml` aligned: `linux/amd64`, `linux/arm/v7`, `linux/arm64`. `linux/arm/v8` is not ARM64.
+- Pi 3/4 support ARM64 with a 64-bit OS, but Compose defaults database, mail, and phpMyAdmin to AMD64 via `PLATFORM`. Verify exact third-party image tags before claiming whole-stack platform support; a SOGo build alone is insufficient.
+- Do not enable Compose `init: true` for LinuxServer MariaDB or phpMyAdmin: s6 must be PID 1. Evaluate other images separately.
+- Preserve mounts, health checks, and dependency ordering. Avoid deleting data or volumes during troubleshooting; never use `docker compose down -v` as a routine reset.
+- Publish only the complete `.env` `VERSION`, without `latest`, major, or minor aliases. Release Git tags must be `v<VERSION>`.
+- Preserve Docker path filters: documentation-only and Compose-only changes must not trigger PR/merge image builds. Do not bump `.env` for these changes.
+- PR builds test AMD64 without publishing; manual builds default to `publish_image: false`. Relevant `main` pushes and matching release-tag pushes publish; tag pushes bypass path filters.
 
 ## Workflows and helper scripts
 
-- Pin third-party actions to full commit SHAs with a version comment. Verify the upstream release and supported runtime when updating a pin. Keep permissions scoped to each job's needs.
-- Codacy uses Opengrep, Pylint, and Trivy. Keep its CLI version, scanner configuration, and workflow matrix compatible. When renaming a scanner, check required code-scanning tool names in repository rules; do not silently weaken those rules.
-- Scanner failures must fail CI. SARIF normalization must retain findings and reject failed or empty scanner runs rather than manufacturing a successful report. A valid scan with zero findings is acceptable.
-- Package cleanup must default to a preview. Preserve referenced manifests and attestations, recent uploads, and versions with alias tags. Delete untagged entries only after inspecting the manifest graph and applying the grace period; untagged does not mean unused in a multiarch image.
-- Keep cleanup and publishing in the same concurrency group. External publishers must remain idle during deletion; inventory rechecks cannot make registry reads and deletes atomic.
-- Preserve cleanup retention, the per-run deletion cap, candidate revalidation, and failure propagation. Test deletion logic with mocked API calls, not live package deletion.
+- Pin third-party actions to full commit SHAs with version comments; verify upstream releases and runtimes when updating. Scope permissions per job.
+- Keep Codacy's CLI, scanner configuration, and matrix compatible with Opengrep, Pylint, and Trivy. Scanner renames must respect required code-scanning tool names in repository rules; never silently weaken them.
+- Scanner failures must fail CI. SARIF normalization must retain findings and reject failed or empty runs; valid scans with zero findings are acceptable.
+- Cleanup defaults to preview. Preserve referenced manifests/attestations, recent uploads, and alias-tagged versions. Inspect the manifest graph and apply the grace period before deleting untagged entries; untagged does not mean unused.
+- Preserve retention, per-run deletion caps, candidate revalidation, and failure propagation. Keep cleanup and publishing in one concurrency group; external publishers must remain idle during deletion. Registry reads and deletes are not atomic.
 
 ## Validation
 
-Run checks appropriate to the changed files from the repository root. Documentation-only changes need a diff and link review, not a Docker build.
+Run relevant checks from the repository root. Documentation-only edits need diff/link review, not a Docker build.
 
 | Change | Check |
 | --- | --- |
@@ -58,16 +55,16 @@ Run checks appropriate to the changed files from the repository root. Documentat
 | GitHub workflows | `actionlint .github/workflows/*.yml` |
 | SARIF helper | `python3 -m unittest discover -s .github/scripts -p 'test_*.py'` |
 | Package cleanup helper | `node --test .github/scripts/test_delete_old_packages.cjs` |
-| Shell scripts | Use `sh -n` or `bash -n` according to the shebang; use ShellCheck when available |
+| Shell scripts | `sh -n` or `bash -n` per shebang; ShellCheck when available |
 
-The Python and Node tests use their standard libraries. State when a required tool is unavailable rather than claiming its check passed. Add regression coverage for changed helper behavior, especially failure handling and deletion safeguards.
-
-For Dockerfile or startup changes, start with a single-platform Buildx build using `--load` and a local test tag. Choose the platform for the test host. Full emulated multiarch builds are expensive; run them when needed to verify release or architecture changes. Syntax checks and successful builds do not establish runtime health: inspect service state and relevant logs when testing startup fixes.
+- Python/Node tests use standard libraries. Cover changed helper behavior, especially failures and deletion safeguards; mock deletion APIs instead of deleting live packages.
+- For Dockerfile/startup changes, start with Buildx `--load`, a local test tag, and the test host's platform. Run expensive emulated multiarch builds when release/architecture verification requires them. For startup fixes, inspect service state and logs; build success does not establish runtime health.
+- Verify releases against the actual commit's workflow run, GHCR manifest, platforms, and version/revision labels. A changed `VERSION` does not prove publication; report pending builds as pending.
+- Report changes, checks actually run, unavailable tools, and limitations. Green CI does not prove a vulnerability-free application or successful deployment.
 
 ## Credentials and local state
 
-- `.github-token` and `.ghcr-token` are local credentials. Never print, commit, or embed them in commands, URLs, logs, or documentation. Use them only for authorized access to the intended service.
-- Avoid printing Git remote URLs or expanded Compose configuration: these can contain credentials. Use `docker compose config --quiet` or `--images` for routine validation.
-- Treat `db-root/`, `phpmyadmin-root/`, `mail-root/`, `backup/`, certificates, and Docker volumes as local deployment data. Exclude them from broad searches and commits unless the task specifically concerns them.
-- `.gitignore` and `.dockerignore` serve different purposes. Check the build context before adding broad `COPY` instructions; credentials and runtime data must not enter images or uploaded build contexts.
-- Report what changed, which checks actually ran, and any remaining limitation. Do not equate a green workflow with a vulnerability-free application or a successful deployment.
+- Use `.github-token` and `.ghcr-token` only for authorized access to their intended services. Never print, commit, or embed credentials in commands, URLs, logs, or documentation.
+- Do not print Git remote URLs or expanded Compose configuration, which may contain credentials. Use `docker compose config --quiet` or `--images`.
+- Exclude deployment data (`db-root/`, `phpmyadmin-root/`, `mail-root/`, `backup/`, certificates, Docker volumes) from broad searches and commits unless explicitly in scope.
+- `.gitignore` and `.dockerignore` serve different purposes. Before broad `COPY` changes, check that credentials and runtime data cannot enter images or uploaded build contexts.
