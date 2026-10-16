@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Publish and verify the OCI index description displayed by GHCR for multi-platform images, and link image metadata to the README at the built commit.
+
 ## [1.3.0] - 2026-10-16
 
 ### Added
@@ -16,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Set the Compose image version to `1.3.0` in `.env`.
 - Updated CodeQL Action to `v4.39.0` in the CodeQL and Codacy workflows.
 - Streamlined release documentation and repository guidance.
 
