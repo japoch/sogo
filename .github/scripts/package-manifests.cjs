@@ -25,41 +25,77 @@ function createRegistry({ owner, packageName, username, token, fetchImpl = fetch
     throw new Error('Invalid GHCR repository name');
   }
   let bearer;
-  async function request(url, authorization) {
+  async function request(url, authorization, allowRedirect = false) {
     const response = await fetchImpl(url, {
-      headers: { Authorization: authorization, Accept: ACCEPT },
-      redirect: 'error',
+      headers: { ...(authorization ? { Authorization: authorization } : {}), Accept: ACCEPT },
+      redirect: allowRedirect ? 'manual' : 'error',
       signal: AbortSignal.timeout(30000),
     });
-    // Do not include response bodies or credentials in error messages.
+    // GHCR can serve blobs from signed storage URLs. Never forward credentials.
+    if (allowRedirect && [301, 302, 303, 307, 308].includes(response.status)) {
+      const target = response.headers.get('location');
+      if (!target) throw new Error('Missing GHCR blob redirect location');
+      const location = new URL(target, url);
+      if (location.protocol !== 'https:' || location.username || location.password) {
+        throw new Error('Invalid GHCR blob redirect');
+      }
+      return request(location.href, undefined);
+    }
+    // Do not include response bodies, signed URLs or credentials in errors.
     if (!response.ok) {
-      const error = new Error(`GHCR ${new URL(url).pathname} failed (HTTP ${response.status})`);
+      const error = new Error(`GHCR request failed (HTTP ${response.status})`);
       error.status = response.status;
       throw error;
     }
     return response;
   }
+  async function authenticate() {
+    if (!bearer) {
+      const url = new URL('https://ghcr.io/token');
+      url.searchParams.set('service', 'ghcr.io');
+      url.searchParams.set('scope', `repository:${repository}:pull`);
+      const basic = Buffer.from(`${username}:${token}`).toString('base64');
+      mask(basic);
+      const response = await request(url, `Basic ${basic}`);
+      const auth = await response.json();
+      bearer = auth.token || auth.access_token;
+      if (typeof bearer !== 'string' || !bearer) throw new Error('Missing GHCR pull token');
+      mask(bearer);
+    }
+  }
+  async function readJson(response, expectedDigest) {
+    const bytes = Buffer.from(await response.arrayBuffer());
+    const digest = `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+    if (expectedDigest && digest !== expectedDigest) {
+      throw new Error(`Manifest digest mismatch: ${expectedDigest}`);
+    }
+    return { digest, manifest: JSON.parse(bytes.toString('utf8')) };
+  }
   return {
     async manifest(digest) {
       checkDigest(digest);
-      if (!bearer) {
-        const url = new URL('https://ghcr.io/token');
-        url.searchParams.set('service', 'ghcr.io');
-        url.searchParams.set('scope', `repository:${repository}:pull`);
-        const basic = Buffer.from(`${username}:${token}`).toString('base64');
-        mask(basic);
-        const response = await request(url, `Basic ${basic}`);
-        const auth = await response.json();
-        bearer = auth.token || auth.access_token;
-        if (typeof bearer !== 'string' || !bearer) throw new Error('Missing GHCR pull token');
-        mask(bearer);
-      }
+      await authenticate();
       const response = await request(`https://ghcr.io/v2/${repository}/manifests/${digest}`, `Bearer ${bearer}`);
-      const bytes = Buffer.from(await response.arrayBuffer());
-      if (`sha256:${createHash('sha256').update(bytes).digest('hex')}` !== digest) {
-        throw new Error(`Manifest digest mismatch: ${digest}`);
+      return (await readJson(response, digest)).manifest;
+    },
+    async tag(tag) {
+      if (!/^[\w][\w.-]{0,127}$/.test(tag)) throw new Error('Invalid image tag');
+      await authenticate();
+      let response;
+      try {
+        response = await request(`https://ghcr.io/v2/${repository}/manifests/${tag}`, `Bearer ${bearer}`);
+      } catch (error) {
+        // Only a missing tag permits a build, never an authentication failure.
+        if (error.status === 404) return null;
+        throw error;
       }
-      return JSON.parse(bytes.toString('utf8'));
+      return readJson(response);
+    },
+    async blob(digest) {
+      checkDigest(digest);
+      await authenticate();
+      const response = await request(`https://ghcr.io/v2/${repository}/blobs/${digest}`, `Bearer ${bearer}`, true);
+      return (await readJson(response, digest)).manifest;
     },
   };
 }

@@ -6,7 +6,7 @@
 
 [SOGo](http://www.sogo.nu) is an open-source groupware server licensed under GNU GPL/LGPL v2 and above. This image builds [SOGo](https://github.com/Alinto/sogo) and [SOPE](https://github.com/Alinto/sope) from source and includes NGINX and memcached.
 
-Images are published to [GHCR](https://github.com/japoch/sogo/pkgs/container/sogo) under the complete release version, such as `1.2.0`.
+Images are available from [GHCR](https://github.com/japoch/sogo/pkgs/container/sogo).
 
 ## Platforms
 
@@ -73,18 +73,25 @@ docker buildx build --platform linux/arm64 --load -t ghcr.io/japoch/sogo:local-t
 
 ### Releases with GitHub Actions
 
-Update `VERSION` in `.env` and, when needed, the source versions in `versions.yaml` before merging the PR into `main`.
+Prepare a release PR with a new `VERSION` in `.env` and a matching `## [VERSION] - YYYY-MM-DD` section in `CHANGELOG.md`. Move only the included changes from `Unreleased`; this section becomes the release notes.
 
-| Trigger | Build | Publish to GHCR |
-| --- | --- | --- |
-| Merge or push to `main` changing build inputs¹ | All three platforms | Yes |
-| Push a `v*` tag matching `.env`, e.g. `v1.2.0` | All three platforms | Yes |
-| Pull request to `main` or `release/**` changing build inputs¹ | AMD64 | No |
-| Manual workflow run | Selected `build_platforms` (default: all three) | Only with `publish_image: true` |
+| Trigger | Build | Publish to GHCR | GitHub release |
+| --- | --- | --- | --- |
+| Relevant push to `main`, or manual `v*` tag matching `.env` | All three platforms | Yes | Yes |
+| Relevant pull request to `main` or `release/**` | AMD64 | No | No |
+| Manual workflow run | Selected `build_platforms` (default: all three) | Only with `publish_image: true` | No |
 
-¹ Build inputs: `Dockerfile`, `.dockerignore`, `.env`, `versions.yaml`, the Docker workflow, and files in `sogo-conf/`, `nginx-conf/`, or `artifacts/`.
+The [workflow's path filters](.github/workflows/docker-image.yml) select changes to build inputs and publishing helpers. Documentation-only and Compose-only changes do not trigger builds or require a version bump. Tag pushes bypass these filters.
 
-The workflow publishes only the complete version tag, without `latest`, major, or minor aliases. Publishing the same version again replaces that tag, so a matching Git tag is optional after a merge build. Manual runs can test a feature branch without publishing. Builds reuse the GitHub Actions layer cache.
+The release sequence is **merge → build → publish → verify → tag and release**. Images use only the complete version, without `latest`, major, or minor aliases. After checking the manifest digest, platforms, and version/revision labels, the workflow creates `v<VERSION>` at the built commit and includes the image digest in the release. Versions such as `1.3.0-rc.1` produce prereleases. Builds reuse the GitHub Actions layer cache.
+
+The release job uses `GITHUB_TOKEN` with `contents: write`; repository rules must allow it to create `v*` tags. These tags [do not trigger another workflow run](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow), avoiding a second build. No manual tagging or additional PAT is needed.
+
+All publishing runs reject existing tags pointing to another commit and images with different version/revision labels or platforms. Use a new version for changed build inputs; existing tags and images are never replaced.
+
+If attestation or release creation fails after publication, rerun the failed jobs in the original push run. Rerunning all jobs also reuses a matching image without rebuilding, completes a missing release, and leaves an existing matching release unchanged. Draft or inconsistent releases require manual review. Authentication errors and incomplete manifests stop the run. If an existing release's image was removed, publish a new version.
+
+Check publishing safeguards and the shared GHCR reader locally with `node --test .github/scripts/test_release_image.cjs .github/scripts/test_delete_old_packages.cjs`.
 
 ### Publish locally
 
@@ -108,11 +115,11 @@ On a Linux builder, cross-platform builds may require [QEMU setup](https://docs.
 
 Run **Delete old Docker images** manually. It previews candidates by default (`dry_run: true`); set `dry_run: false` to delete them. `keep_versions: 2` retains the two newest release-only versions by creation date. `min_age_hours: 168` protects versions created or updated within the last seven days (minimum setting: 24 hours).
 
-The workflow reads and verifies the GHCR manifests before selecting older release-only versions and untagged orphans. All tagged images, including aliases, and recent uploads protect their referenced platform manifests, nested indexes, and attestations. Tagged versions with aliases such as `latest` or `main` are never deleted. Keep a protected alias tag for images used only by digest; digest-only consumers cannot be detected.
+The workflow verifies GHCR manifests before selecting older release-only versions and untagged orphans. Tagged images and recent uploads protect their referenced platform manifests, nested indexes, and attestations. Versions with aliases such as `latest` or `main` are never deleted. Keep a protected alias for images used only by digest; digest-only consumers cannot be detected.
 
 At most 100 releases and orphans are deleted per run, with orphaned parents removed before their dependencies. Children of a release deleted in this run become eligible on a subsequent run. Cyclic references are retained. Orphaned indexes may be removed even if some children are already absent from both GHCR and the package inventory; missing children of protected images stop cleanup. The summary separates release and orphan candidates and reports protected and deferred versions.
 
-Publishing and cleanup share a GitHub Actions concurrency group. Use the updated versions of both workflows and let older publishing runs finish before deleting. Do not publish from local machines or other repositories during cleanup: the lock covers only this repository's workflows. The script rechecks the package inventory before each deletion and aborts on changes, unreadable manifests, or unsupported formats; registry reads and deletion are not an atomic transaction.
+Publishing, release verification, and cleanup share a GitHub Actions concurrency group. Keep external publishers idle during these operations: the lock covers only this repository's workflows. Cleanup rechecks the package inventory before each deletion and aborts on changes, unreadable manifests, or unsupported formats; registry reads and deletion are not atomic.
 
 The repository's `GITHUB_TOKEN` needs **Admin** access to the container package under **Package settings → Manage Actions access**, in addition to the workflow's `packages: write` permission. See [GitHub's package deletion permissions](https://docs.github.com/en/packages/learn-github-packages/deleting-and-restoring-a-package).
 
