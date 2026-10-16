@@ -93,6 +93,8 @@ If attestation or release creation fails after publication, rerun the failed job
 
 Check publishing safeguards and the shared GHCR reader locally with `node --test .github/scripts/test_release_image.cjs .github/scripts/test_delete_old_packages.cjs`.
 
+The workflow's `IMAGE_DESCRIPTION` supplies both the image label and the OCI index annotation used by GHCR for multi-platform package descriptions. A documentation link points to the README at the built commit. Publication verification rejects missing or mismatched index descriptions. Update metadata as part of a new release: changing an existing index also changes its digest and requires updating the release digest and provenance attestation.
+
 ### Publish locally
 
 Create a personal access token (classic) with `write:packages` and save it in the ignored `.ghcr-token` file. For authenticated pulls only, `read:packages` is sufficient; see [GHCR authentication](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry). Replace `GITHUB_USERNAME` with your username.
