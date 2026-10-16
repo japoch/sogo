@@ -54,6 +54,10 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  IMAGE_DESCRIPTION: >-
+    SOGo groupware with webmail, calendars and contacts, built from source on Debian
+    with SOPE, NGINX and memcached. Supports AMD64, ARMv7 and ARM64;
+    requires external database and mail services.
   PUBLISH_IMAGE: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_image) }}
   BUILD_PLATFORMS: ${{ github.event_name == 'pull_request' && 'linux/amd64' || inputs.build_platforms || 'linux/amd64,linux/arm/v7,linux/arm64' }}
 
@@ -116,13 +120,21 @@ jobs:
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        env:
+          # GHCR reads multi-platform descriptions from the image index.
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: index
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: latest=false
           tags: type=raw,value=${{ steps.version.outputs.version }}
           labels: |
+            org.opencontainers.image.description=${{ env.IMAGE_DESCRIPTION }}
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/${{ steps.version.outputs.commit }}/README.md
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
             org.opencontainers.image.revision=${{ steps.version.outputs.commit }}
+          annotations: |
+            org.opencontainers.image.description=${{ env.IMAGE_DESCRIPTION }}
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/${{ steps.version.outputs.commit }}/README.md
 
       - name: Set up QEMU
         if: steps.prepare.outputs.build != 'false' && env.BUILD_PLATFORMS != 'linux/amd64'
@@ -150,6 +162,9 @@ jobs:
           outputs: ${{ env.PUBLISH_IMAGE != 'true' && 'type=cacheonly' || '' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ env.PUBLISH_IMAGE == 'true' && steps.meta.outputs.annotations || '' }}
+          # Provenance also produces an index for single-platform publications.
+          provenance: mode=max
           platforms: ${{ env.BUILD_PLATFORMS }}
           cache-from: type=gha,scope=sogo
           cache-to: type=gha,scope=sogo,mode=max

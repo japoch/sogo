@@ -53,7 +53,7 @@ function platformName({ os, architecture, variant }) {
   return `${os}/${architecture}${variant && !(architecture === 'arm64' && variant === 'v8') ? `/${variant}` : ''}`;
 }
 
-async function verifyImage({ registry, version, commit, platforms, expectedDigest }) {
+async function verifyImage({ registry, version, commit, platforms, expectedDigest, expectedDescription }) {
   const found = await registry.tag(version);
   if (!found) {
     if (expectedDigest) throw new Error('The published image tag is missing.');
@@ -61,6 +61,14 @@ async function verifyImage({ registry, version, commit, platforms, expectedDiges
   }
   checkDigest(found.digest);
   if (expectedDigest && found.digest !== expectedDigest) throw new Error('The image digest changed after publishing.');
+  if (expectedDescription !== undefined) {
+    if (typeof expectedDescription !== 'string' || !expectedDescription.trim() || [...expectedDescription].length > 512) {
+      throw new Error('Image description must contain 1 to 512 characters.');
+    }
+    if (found.manifest?.annotations?.['org.opencontainers.image.description'] !== expectedDescription) {
+      throw new Error('Image index description is missing or differs from IMAGE_DESCRIPTION.');
+    }
+  }
   const actual = [];
   async function inspect(manifest, platform) {
     if (manifest?.schemaVersion !== 2 || !IMAGE_TYPES.has(manifest.mediaType) || !Array.isArray(manifest.layers)) {
@@ -168,6 +176,7 @@ async function run({ github, context, core, env, mode }) {
   const options = {
     github, repo, version: env.RELEASE_VERSION, commit: env.RELEASE_COMMIT,
     platforms: env.BUILD_PLATFORMS, expectedDigest: env.EXPECTED_DIGEST || undefined,
+    expectedDescription: env.IMAGE_DESCRIPTION,
     automatic: context.eventName === 'push',
     changelog: readFileSync('CHANGELOG.md', 'utf8'),
     image: `ghcr.io/${repo.owner}/${repo.repo}`.toLowerCase(),
