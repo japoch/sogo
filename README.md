@@ -4,13 +4,9 @@
 [![Codacy Security Scan](https://github.com/japoch/SOGo/actions/workflows/codacy.yml/badge.svg)](https://github.com/japoch/SOGo/actions/workflows/codacy.yml)
 [![CodeQL Advanced](https://github.com/japoch/sogo/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/japoch/sogo/actions/workflows/codeql.yml)
 
-[SOGo](http://www.sogo.nu) is an open-source groupware server licensed under GNU GPL/LGPL v2 and above. This image builds [SOGo](https://github.com/Alinto/sogo) and [SOPE](https://github.com/Alinto/sope) from source and includes NGINX and memcached.
-
-Images are available from [GHCR](https://github.com/japoch/sogo/pkgs/container/sogo).
+[SOGo](http://www.sogo.nu) is an open-source groupware server (GNU GPL/LGPL v2+). This [GHCR image](https://github.com/japoch/sogo/pkgs/container/sogo) builds [SOGo](https://github.com/Alinto/sogo) and [SOPE](https://github.com/Alinto/sope) from source with NGINX and memcached.
 
 ## Platforms
-
-Release builds target these platforms:
 
 | Host | Docker platform |
 | --- | --- |
@@ -18,11 +14,11 @@ Release builds target these platforms:
 | Raspberry Pi 3 or 4 with a 32-bit OS | `linux/arm/v7` |
 | Raspberry Pi 3 or 4 with a 64-bit OS | `linux/arm64` |
 
-Both Pi models support [Raspberry Pi OS (64-bit)](https://www.raspberrypi.com/news/raspberry-pi-os-64-bit/). Use it for ARM64 containers; `linux/arm/v8` is not an ARM64 target. Docker selects the matching image from the release tag automatically.
+ARM64 requires a 64-bit OS; `linux/arm/v8` is not ARM64. Docker selects the matching image automatically.
 
 ## Setup
 
-Set the image `VERSION` in `.env`, then start the Docker Compose stack. On Raspberry Pi, also set `PLATFORM` to the value from the table: the database, mail, and phpMyAdmin services otherwise default to AMD64. These third-party images must support the selected architecture; the SOGo build does not establish compatibility for the whole stack.
+Set `VERSION` in `.env`. On Raspberry Pi, also set `PLATFORM` from the table and verify architecture support for the configured database, mail, and phpMyAdmin image tags; these services default to AMD64.
 
 ```bash
 docker compose up -d
@@ -35,7 +31,7 @@ To run the SOGo container separately (requires an external database):
 docker run --rm --name sogo ghcr.io/japoch/sogo:1.2.0
 ```
 
-Optionally, manage the Compose stack through systemd:
+Optional systemd service:
 
 ```bash
 cp ./artifacts/sogo-docker.service /etc/systemd/system
@@ -45,11 +41,10 @@ journalctl -u sogo-docker.service -f
 
 ### Configuration
 
-- **Database:** Configure a separate database supported by SOGo in `sogo-conf/sogo.conf`. See the *Database Configuration* chapter of the SOGo documentation.
-- **Mail:** See the SOGo documentation for MTA configuration and SMTP authentication.
-- **NGINX and HTTPS:** Configuration files are in `artifacts/nginx.conf` and `nginx-conf/sites-enabled/sogo-nginx.conf`. Provide certificates in the container as needed. The image exposes ports 80 (HTTP), 443 (HTTPS), and 20000 (SOGo).
-- **Workers:** Adjust `WOWorkersCount` in `sogo.conf` to match your workload; the example value of `8` may be insufficient for medium and larger instances.
-- **Cron:** `artifacts/sogo.cron` contains jobs for backups, session cleanup, and Sieve. To enable scheduled backups, uncomment the backup job and rebuild. The script is installed at `/usr/local/share/doc/sogo/sogo-backup.sh`.
+- **Database and mail:** Configure `sogo-conf/sogo.conf` using SOGo's database, MTA, and SMTP authentication documentation.
+- **NGINX and HTTPS:** Edit `artifacts/nginx.conf` and `nginx-conf/sites-enabled/sogo-nginx.conf`; provide certificates in the container. Exposed ports: 80, 443, and 20000 (SOGo).
+- **Workers:** Size `WOWorkersCount` in `sogo.conf` for your workload.
+- **Cron:** Edit `artifacts/sogo.cron` for backups, session cleanup, and Sieve. Uncomment the backup job and rebuild to enable scheduled backups.
 
 Generate a self-signed certificate for Dovecot:
 
@@ -61,11 +56,11 @@ openssl req -newkey rsa:4096 -sha512 -x509 -days 365 -nodes \
 
 ## Build
 
-Requires Docker with Buildx. SOGo and SOPE source versions are set in `versions.yaml`; the image version and local build platforms are set in `.env`.
+Requires Docker with Buildx. Set upstream versions in `versions.yaml`; set `VERSION` and `BUILD_PLATFORMS` in `.env`.
 
 ### Local builds
 
-Build and load a single platform for local testing. Choose `--platform` from the table above; this example targets a Raspberry Pi with a 64-bit OS:
+Build for the test host's platform, for example ARM64:
 
 ```bash
 docker buildx build --platform linux/arm64 --load -t ghcr.io/japoch/sogo:local-test .
@@ -73,7 +68,7 @@ docker buildx build --platform linux/arm64 --load -t ghcr.io/japoch/sogo:local-t
 
 ### Releases with GitHub Actions
 
-Prepare a release PR with a new `VERSION` in `.env` and a matching `## [VERSION] - YYYY-MM-DD` section in `CHANGELOG.md`. Move only the included changes from `Unreleased`; this section becomes the release notes.
+Prepare a PR with a new `.env` `VERSION` and a matching `## [VERSION] - YYYY-MM-DD` changelog section. Move only released changes from `Unreleased`; they become the release notes.
 
 | Trigger | Build | Publish to GHCR | GitHub release |
 | --- | --- | --- | --- |
@@ -81,25 +76,25 @@ Prepare a release PR with a new `VERSION` in `.env` and a matching `## [VERSION]
 | Relevant pull request to `main` or `release/**` | AMD64 | No | No |
 | Manual workflow run | Selected `build_platforms` (default: all three) | Only with `publish_image: true` | No |
 
-The [workflow's path filters](.github/workflows/docker-image.yml) select changes to build inputs and publishing helpers. Documentation-only and Compose-only changes do not trigger builds or require a version bump. Tag pushes bypass these filters.
+The [workflow](.github/workflows/docker-image.yml) skips documentation-only and Compose-only changes; neither needs a version bump. Tag pushes bypass path filters.
 
-The release sequence is **merge → build → publish → verify → tag and release**. Images use only the complete version, without `latest`, major, or minor aliases. After checking the manifest digest, platforms, and version/revision labels, the workflow creates `v<VERSION>` at the built commit and includes the image digest in the release. Versions such as `1.3.0-rc.1` produce prereleases. Builds reuse the GitHub Actions layer cache.
+Releases follow **merge → build → publish → verify → update latest → tag and release**. Verification covers the digest, platforms, version/revision labels, and index description. The workflow creates `v<VERSION>` at the built commit and records the image digest in the release.
 
-The release job uses `GITHUB_TOKEN` with `contents: write`; repository rules must allow it to create `v*` tags. These tags [do not trigger another workflow run](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow), avoiding a second build. No manual tagging or additional PAT is needed.
+Images use complete version tags and `latest`; no major or minor aliases. Prereleases such as `1.3.0-rc.1` and older versions never replace `latest`. Version tags and images are not overwritten; changed build inputs require a new version.
 
-All publishing runs reject existing tags pointing to another commit and images with different version/revision labels or platforms. Use a new version for changed build inputs; existing tags and images are never replaced.
+Repository rules must let `GITHUB_TOKEN` create `v*` tags with `contents: write`. No manual tagging or extra PAT is needed.
 
-If attestation or release creation fails after publication, rerun the failed jobs in the original push run. Rerunning all jobs also reuses a matching image without rebuilding, completes a missing release, and leaves an existing matching release unchanged. Draft or inconsistent releases require manual review. Authentication errors and incomplete manifests stop the run. If an existing release's image was removed, publish a new version.
+To repair `latest` for an existing release (for example `1.3.1`), run **Create and publish Docker image** from a branch with this workflow and the desired `.env` `VERSION`. Set `publish_image: true`, `latest_only: true`, and the published `build_platforms`. This verifies and copies the released digest without rebuilding. Only this mode can replace a legacy alias without version labels; inconsistent metadata requires manual review.
 
-Check publishing safeguards and the shared GHCR reader locally with `node --test .github/scripts/test_release_image.cjs .github/scripts/test_delete_old_packages.cjs`.
+After attestation or release failure, rerun jobs in the original push run; matching images are reused. Draft or inconsistent releases need manual review. If a released image was deleted, publish a new version.
 
-The workflow's `IMAGE_DESCRIPTION` supplies both the image label and the OCI index annotation used by GHCR for multi-platform package descriptions. A documentation link points to the README at the built commit. Publication verification rejects missing or mismatched index descriptions. Update metadata as part of a new release: changing an existing index also changes its digest and requires updating the release digest and provenance attestation.
+Test publishing safeguards: `node --test .github/scripts/test_release_image.cjs .github/scripts/test_delete_old_packages.cjs`.
+
+`IMAGE_DESCRIPTION` sets the image label and GHCR index description. Metadata changes require a new release because they change the digest.
 
 ### Publish locally
 
-Create a personal access token (classic) with `write:packages` and save it in the ignored `.ghcr-token` file. For authenticated pulls only, `read:packages` is sufficient; see [GHCR authentication](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry). Replace `GITHUB_USERNAME` with your username.
-
-Run in Bash with a Buildx builder supporting the target platforms:
+Save a classic PAT with `write:packages` in the ignored `.ghcr-token` file ([GHCR authentication](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry)). Replace `GITHUB_USERNAME` and run in Bash:
 
 ```bash
 docker login ghcr.io --username GITHUB_USERNAME --password-stdin < .ghcr-token
@@ -109,25 +104,23 @@ docker buildx build --platform "$BUILD_PLATFORMS" -t "ghcr.io/japoch/sogo:$VERSI
 docker logout ghcr.io
 ```
 
-On a Linux builder, cross-platform builds may require [QEMU setup](https://docs.docker.com/build/building/multi-platform/#qemu). GitHub Actions configures it automatically.
+Cross-platform builds may need [QEMU](https://docs.docker.com/build/building/multi-platform/#qemu); GitHub Actions sets it up automatically.
 
 ## Usage
 
 ### Container image cleanup
 
-Run **Delete old Docker images** manually. It previews candidates by default (`dry_run: true`); set `dry_run: false` to delete them. `keep_versions: 2` retains the two newest release-only versions by creation date. `min_age_hours: 168` protects versions created or updated within the last seven days (minimum setting: 24 hours).
+Run **Delete old Docker images** manually with `dry_run: true` to preview, then `false` to delete. Defaults retain the two newest release-only versions (`keep_versions: 2`) and uploads created or updated within seven days (`min_age_hours: 168`, minimum 24).
 
-The workflow verifies GHCR manifests before selecting older release-only versions and untagged orphans. Tagged images and recent uploads protect their referenced platform manifests, nested indexes, and attestations. Versions with aliases such as `latest` or `main` are never deleted. Keep a protected alias for images used only by digest; digest-only consumers cannot be detected.
+Cleanup verifies manifest references and protects aliases such as `latest`, recent uploads, and their dependencies. Keep an alias for images used only by digest; those consumers cannot be detected. Each run deletes at most 100 releases and orphans, removing parents before dependencies.
 
-At most 100 releases and orphans are deleted per run, with orphaned parents removed before their dependencies. Children of a release deleted in this run become eligible on a subsequent run. Cyclic references are retained. Orphaned indexes may be removed even if some children are already absent from both GHCR and the package inventory; missing children of protected images stop cleanup. The summary separates release and orphan candidates and reports protected and deferred versions.
+Publishing and cleanup share a workflow lock; keep external publishers idle. Cleanup rechecks inventory before deletion and stops on changes or manifest errors. Registry reads and deletes are not atomic.
 
-Publishing, release verification, and cleanup share a GitHub Actions concurrency group. Keep external publishers idle during these operations: the lock covers only this repository's workflows. Cleanup rechecks the package inventory before each deletion and aborts on changes, unreadable manifests, or unsupported formats; registry reads and deletion are not atomic.
-
-The repository's `GITHUB_TOKEN` needs **Admin** access to the container package under **Package settings → Manage Actions access**, in addition to the workflow's `packages: write` permission. See [GitHub's package deletion permissions](https://docs.github.com/en/packages/learn-github-packages/deleting-and-restoring-a-package).
+Deletion requires `packages: write` and repository **Admin** access under **Package settings → Manage Actions access** ([permissions](https://docs.github.com/en/packages/learn-github-packages/deleting-and-restoring-a-package)).
 
 ### User management
 
-Set the user details, then run the required command:
+Set user details, then choose a command:
 
 ```bash
 sogo_user='user.name'
@@ -178,7 +171,7 @@ Alternatively, use SOGo's browser import/export feature.
 
 ### Data too long for column 'c_value'
 
-If session writes fail with `Data too long for column 'c_value' at row 1`, enlarge the session column to accommodate longer cookies ([SOGo issue #5491](https://bugs.sogo.nu/view.php?id=5491)):
+Enlarge the session column for longer cookies ([SOGo issue #5491](https://bugs.sogo.nu/view.php?id=5491)):
 
 ```sql
 ALTER TABLE sogo_sessions_folder MODIFY c_value VARCHAR(4096) NOT NULL;

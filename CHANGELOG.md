@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Update `latest` to the verified stable image digest, including reused images, while preventing prereleases and older versions from replacing it. Add a manual `latest_only` mode to repair the alias for an existing release without rebuilding.
+
 ## [1.3.1] - 2026-10-16
 
 ### Fixed

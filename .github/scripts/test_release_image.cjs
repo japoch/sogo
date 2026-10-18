@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { createHash } = require('node:crypto');
 const { createRegistry } = require('./package-manifests.cjs');
-const { releaseNotes, checkTag, verifyImage, prepareRelease, finishRelease } = require('./release-image.cjs');
+const { releaseNotes, checkTag, verifyImage, prepareRelease, finishRelease, promoteLatest } = require('./release-image.cjs');
 
 const VERSION = '2.0.0';
 const COMMIT = 'a'.repeat(40);
@@ -64,6 +64,135 @@ function fixture() {
       platforms: PLATFORMS, automatic: true, changelog: CHANGELOG, image: 'ghcr.io/owner/sogo' } };
 }
 const writes = f => f.calls.filter(call => call.route.startsWith('POST'));
+
+function latestFixture(previous = '1.3.0') {
+  const f = fixture();
+  f.options.expectedDigest = DIGEST;
+  f.state.latest = previous ? { digest: digest(90), manifest: {
+    schemaVersion: 2, mediaType: IMAGE, config: { digest: digest(91) }, layers: [],
+  } } : null;
+  f.options.registry.tag = async tag => tag === 'latest' ? f.state.latest : f.state.found;
+  const blob = f.options.registry.blob;
+  f.options.registry.blob = async name => name === digest(91)
+    ? { config: { Labels: { 'org.opencontainers.image.version': previous } } } : blob(name);
+  f.published = [];
+  f.publish = async (image, digest) => {
+    f.published.push({ image, digest });
+    f.state.latest = f.state.found;
+  };
+  return f;
+}
+
+test('latest is created or advanced using the exact verified digest, including reused images', async () => {
+  for (const previous of [null, '1.3.0', '1.99.0']) {
+    const f = latestFixture(previous);
+    assert.equal((await prepareRelease(f.options)).build, false);
+    await promoteLatest(f.options, f.publish);
+    assert.deepEqual(f.published, [{ image: f.options.image, digest: DIGEST }]);
+    await promoteLatest(f.options, f.publish);
+    assert.equal(f.published.length, 1);
+  }
+});
+
+test('prereleases and older versions do not change latest', async () => {
+  for (const previous of ['2.0.1', '2.1.0', '10.0.0']) {
+    const f = latestFixture(previous);
+    await promoteLatest(f.options, f.publish);
+    assert.deepEqual(f.published, []);
+  }
+  const f = latestFixture();
+  f.options.version = '3.0.0-rc.1';
+  f.options.registry.tag = () => { throw new Error('Must not inspect'); };
+  await promoteLatest(f.options, f.publish);
+  assert.deepEqual(f.published, []);
+});
+
+test('latest version comparison reads an index runtime image and skips attestations', async () => {
+  const f = latestFixture('10.0.0');
+  const previous = f.state.latest.manifest;
+  f.state.latest.manifest = { schemaVersion: 2, mediaType: INDEX, manifests: [
+    { digest: digest(92), platform: { os: 'unknown', architecture: 'unknown' } },
+    { digest: digest(93), platform: { os: 'linux', architecture: 'amd64' } },
+  ] };
+  const manifest = f.options.registry.manifest;
+  f.options.registry.manifest = async name => name === digest(93) ? previous : manifest(name);
+  await promoteLatest(f.options, f.publish);
+  assert.deepEqual(f.published, []);
+});
+
+test('latest-only resolves the released commit instead of the workflow commit without rebuilding', async () => {
+  const f = latestFixture();
+  f.options.latestOnly = true;
+  f.options.commit = 'c'.repeat(40);
+  f.options.expectedDigest = undefined;
+  f.state.tag = { type: 'tag', sha: 'd'.repeat(40) };
+  f.state.release = { tag_name: `v${VERSION}`, draft: false, prerelease: false, body: `Digest: \`${DIGEST}\`` };
+  await promoteLatest(f.options, f.publish);
+  assert.deepEqual(f.published, [{ image: f.options.image, digest: DIGEST }]);
+  assert.deepEqual(writes(f), []);
+});
+
+test('only explicit latest-only repair can replace the legacy alias without version labels', async () => {
+  const f = latestFixture();
+  const blob = f.options.registry.blob;
+  f.options.registry.blob = async name => name === digest(91) ? { config: {} } : blob(name);
+  await assert.rejects(promoteLatest(f.options, f.publish), /unlabeled legacy/);
+  assert.deepEqual(f.published, []);
+  f.options.latestOnly = true;
+  f.state.tag = { type: 'commit', sha: COMMIT };
+  f.state.release = { tag_name: `v${VERSION}`, draft: false, prerelease: false, body: `Digest: \`${DIGEST}\`` };
+  await promoteLatest(f.options, f.publish);
+  assert.deepEqual(f.published, [{ image: f.options.image, digest: DIGEST }]);
+});
+
+test('latest-only rejects missing, draft, prerelease, mismatched or inconsistent releases', async () => {
+  for (const mutate of [
+    f => { f.state.release = null; },
+    f => { f.state.release.draft = true; },
+    f => { f.state.release.prerelease = true; },
+    f => { f.state.release.tag_name = 'v1.0.0'; },
+    f => { f.state.release.body = ''; },
+    f => { f.state.release.body = `Digest: \`${digest(70)}\``; },
+    f => { f.state.tag = null; },
+    f => { f.state.tag.sha = 'c'.repeat(40); },
+    f => { f.state.found = null; },
+  ]) {
+    const f = latestFixture();
+    f.options.latestOnly = true;
+    f.state.tag = { type: 'commit', sha: COMMIT };
+    f.state.release = { tag_name: `v${VERSION}`, draft: false, prerelease: false, body: `Digest: \`${DIGEST}\`` };
+    mutate(f);
+    await assert.rejects(promoteLatest(f.options, f.publish));
+    assert.deepEqual(f.published, []);
+  }
+});
+
+test('latest is not written when image verification or current alias inspection fails', async () => {
+  for (const mutate of [
+    f => { f.options.expectedDigest = undefined; },
+    f => { f.options.expectedDigest = digest(70); },
+    f => { f.configs[0].config.Labels['org.opencontainers.image.revision'] = 'other'; },
+    f => { f.index.manifests.pop(); },
+    f => { f.state.tag = { type: 'commit', sha: 'c'.repeat(40) }; },
+    f => { f.options.registry.tag = async () => { throw failure(403); }; },
+  ]) {
+    const f = latestFixture();
+    mutate(f);
+    await assert.rejects(promoteLatest(f.options, f.publish));
+    assert.deepEqual(f.published, []);
+  }
+  for (const previous of [VERSION, 'unknown']) {
+    const f = latestFixture(previous);
+    await assert.rejects(promoteLatest(f.options, f.publish));
+    assert.deepEqual(f.published, []);
+  }
+});
+
+test('latest publication errors and digest mismatches fail the run', async () => {
+  const f = latestFixture();
+  await assert.rejects(promoteLatest(f.options, async () => { throw failure(500); }), /500/);
+  await assert.rejects(promoteLatest(f.options, async () => {}), /does not match/);
+});
 
 test('release notes include only the requested version and omit reference links', () => {
   assert.equal(releaseNotes(CHANGELOG, VERSION), '### Added\n\n- Release change.');
