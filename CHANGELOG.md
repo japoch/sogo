@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.3] - 2026-10-18
 
+### Added
+
+- Added a release shortcut covering branch preparation, version and changelog updates, checks, commits, push, and PR creation. Merging and publication verification require an explicit merge request.
+
 ### Changed
 
 - Condensed repository guidance and documented rebase or squash merges as the default for a linear history.
