@@ -8,6 +8,10 @@
 - Use rebase merge or squash merge for linear history. Create merge commits only on explicit request.
 - Keep operational instructions in [README.md](README.md) and user-visible changes under `Unreleased` in [CHANGELOG.md](CHANGELOG.md). Move only released changes into version sections.
 
+## Release shortcut
+
+Treat "Prepare release X.Y.Z" (or the equivalent in the user's language) as authorization to create or reuse `release/X.Y.Z`, include the agreed changes, update `.env` and dated changelog notes, run relevant checks, commit, push, and create or update a PR against `main`. Preserve unrelated local changes and report the PR link and CI status. Use the existing origin token for GitHub access without exposing it. Stop before merging unless requested; when authorized and required CI passes, use rebase merge (or squash if requested), then monitor publication and verify the release as described below.
+
 ## Project map
 
 This repository packages SOGo, not upstream application source.
