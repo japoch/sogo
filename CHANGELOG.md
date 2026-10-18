@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Condensed repository guidance and documented rebase or squash merges as the default for a linear history.
+
 ## [1.3.2] - 2026-10-18
 
 ### Fixed
