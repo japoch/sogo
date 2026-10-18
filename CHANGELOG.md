@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-10-18
+
 ### Changed
 
 - Condensed repository guidance and documented rebase or squash merges as the default for a linear history.
@@ -149,7 +151,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated SOGo to 5.10.0.
 
-[Unreleased]: https://github.com/japoch/SOGo/compare/v1.3.2...main
+[Unreleased]: https://github.com/japoch/SOGo/compare/v1.3.3...main
+[1.3.3]: https://github.com/japoch/SOGo/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/japoch/SOGo/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/japoch/SOGo/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/japoch/SOGo/compare/v1.2.0...v1.3.0
