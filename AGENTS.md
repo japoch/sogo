@@ -32,7 +32,7 @@ This repository packages SOGo; it does not maintain upstream application source.
 - Pi 3/4 support ARM64 with a 64-bit OS, but Compose defaults database, mail, and phpMyAdmin to AMD64 via `PLATFORM`. Verify exact third-party image tags before claiming whole-stack platform support; a SOGo build alone is insufficient.
 - Do not enable Compose `init: true` for LinuxServer MariaDB or phpMyAdmin: s6 must be PID 1. Evaluate other images separately.
 - Preserve mounts, health checks, and dependency ordering. Avoid deleting data or volumes during troubleshooting; never use `docker compose down -v` as a routine reset.
-- Publish only the complete `.env` `VERSION`, without `latest`, major, or minor aliases. Release Git tags must be `v<VERSION>`.
+- Publish the complete `.env` `VERSION` and update `latest` separately to the verified stable image digest, including reused images. Never move `latest` to a prerelease or an older version; do not publish major or minor aliases. Release Git tags must be `v<VERSION>`.
 - Preserve Docker path filters: documentation-only and Compose-only changes must not trigger PR/merge image builds. Do not bump `.env` for these changes.
 - PR builds test AMD64 without publishing; manual builds default to `publish_image: false`. Relevant `main` pushes and matching release-tag pushes publish; tag pushes bypass path filters.
 

@@ -1,6 +1,7 @@
 'use strict';
 
 const { readFileSync } = require('node:fs');
+const { execFileSync } = require('node:child_process');
 const { createRegistry, checkDigest } = require('./package-manifests.cjs');
 
 const INDEX_TYPES = new Set([
@@ -32,19 +33,76 @@ async function optionalRequest(github, route, params) {
   }
 }
 
-async function checkTag({ github, repo, version, commit }) {
+async function tagCommit({ github, repo, version }) {
   const tag = `v${version}`;
   const ref = await optionalRequest(github, 'GET /repos/{owner}/{repo}/git/ref/{ref}', { ...repo, ref: `tags/${tag}` });
-  if (!ref) return false;
+  if (!ref) return null;
   let object = ref.object;
   // Peel annotated tags as well as lightweight tags; bound malformed chains.
   for (let depth = 0; object?.type === 'tag' && depth < 10; depth++) {
     object = (await github.request('GET /repos/{owner}/{repo}/git/tags/{tag_sha}', { ...repo, tag_sha: object.sha })).data.object;
   }
-  if (object?.type !== 'commit' || object.sha !== commit) {
+  if (object?.type !== 'commit') throw new Error(`Invalid release tag: ${tag}`);
+  return object.sha;
+}
+
+async function checkTag(options) {
+  const sha = await tagCommit(options);
+  if (!sha) return false;
+  if (sha !== options.commit) {
+    const tag = `v${options.version}`;
     throw new Error(`${tag} already points to another commit. Increase VERSION in .env; tags are never moved.`);
   }
   return true;
+}
+
+async function promoteLatest(options, publish = (image, digest) => {
+  execFileSync('docker', ['buildx', 'imagetools', 'create', '--prefer-index=false',
+    '--tag', `${image}:latest`, `${image}@${digest}`], { stdio: 'inherit' });
+}) {
+  const { registry, version, image } = options;
+  if (version.includes('-')) return 'Prerelease: latest unchanged.';
+  const stableVersion = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/;
+  if (!stableVersion.test(version)) throw new Error('Invalid stable version for latest.');
+  if (options.latestOnly) {
+    const release = await optionalRequest(options.github, 'GET /repos/{owner}/{repo}/releases/tags/{tag}', {
+      ...options.repo, tag: `v${version}`,
+    });
+    const commit = await tagCommit(options);
+    const expectedDigest = release?.body?.match(/Digest: `([^`]+)`/)?.[1];
+    if (!commit || !release || release.tag_name !== `v${version}` || release.draft || release.prerelease || !expectedDigest) {
+      throw new Error('Updating latest requires an existing stable release, Git tag and recorded image digest.');
+    }
+    options = { ...options, commit, expectedDigest: checkDigest(expectedDigest) };
+  }
+  if (!options.expectedDigest) throw new Error('A verified image digest is required for latest.');
+  const hasTag = await checkTag(options);
+  if (options.latestOnly && !hasTag) throw new Error('The release tag disappeared before updating latest.');
+  const digest = await verifyImage(options);
+  const current = await registry.tag('latest');
+  if (current?.digest === digest) return `latest already points to ${version} (${digest}).`;
+  if (current) {
+    let manifest = current.manifest;
+    if (INDEX_TYPES.has(manifest?.mediaType)) {
+      const descriptor = manifest.manifests?.find(entry => entry.platform?.os !== 'unknown');
+      if (!descriptor) throw new Error('Cannot determine the current latest version.');
+      manifest = await registry.manifest(checkDigest(descriptor.digest));
+    }
+    const config = await registry.blob(checkDigest(manifest.config?.digest));
+    const previous = config.config?.Labels?.['org.opencontainers.image.version'];
+    // The legacy latest image predates version labels. Only explicit repair may replace it.
+    if (previous != null || !options.latestOnly) {
+      if (!stableVersion.test(previous)) throw new Error('Cannot determine the current stable latest version; use latest_only for an unlabeled legacy image.');
+      const oldParts = previous.split('.').map(BigInt);
+      const newParts = version.split('.').map(BigInt);
+      const difference = newParts.map((part, i) => part - oldParts[i]).find(part => part !== 0n);
+      if (difference < 0n) return `latest remains on newer version ${previous}.`;
+      if (difference === undefined) throw new Error('latest has the same version but a different digest; review it manually.');
+    }
+  }
+  await publish(image, digest);
+  if ((await registry.tag('latest'))?.digest !== digest) throw new Error('latest does not match the verified image digest.');
+  return `latest now points to ${version} (${digest}).`;
 }
 
 function platformName({ os, architecture, variant }) {
@@ -177,6 +235,7 @@ async function run({ github, context, core, env, mode }) {
     github, repo, version: env.RELEASE_VERSION, commit: env.RELEASE_COMMIT,
     platforms: env.BUILD_PLATFORMS, expectedDigest: env.EXPECTED_DIGEST || undefined,
     expectedDescription: env.IMAGE_DESCRIPTION,
+    latestOnly: env.LATEST_ONLY === 'true',
     automatic: context.eventName === 'push',
     changelog: readFileSync('CHANGELOG.md', 'utf8'),
     image: `ghcr.io/${repo.owner}/${repo.repo}`.toLowerCase(),
@@ -191,6 +250,8 @@ async function run({ github, context, core, env, mode }) {
   } else if (mode === 'verify') {
     if (!options.expectedDigest) throw new Error('Missing build digest');
     core.setOutput('digest', await verifyImage(options));
+  } else if (mode === 'latest') {
+    core.info(await promoteLatest(options));
   } else if (mode === 'release') {
     const url = await finishRelease(options);
     await core.summary.addHeading('Release').addLink(`v${options.version}`, url)
@@ -200,4 +261,4 @@ async function run({ github, context, core, env, mode }) {
   }
 }
 
-module.exports = { releaseNotes, checkTag, verifyImage, prepareRelease, finishRelease, run };
+module.exports = { releaseNotes, checkTag, verifyImage, prepareRelease, finishRelease, promoteLatest, run };

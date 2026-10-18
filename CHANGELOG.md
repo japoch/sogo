@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-10-18
+
+### Fixed
+
+- Update `latest` to the verified stable image digest, including reused images, while preventing prereleases and older versions from replacing it. Add a manual `latest_only` mode to repair the alias for an existing release without rebuilding.
+
+### Changed
+
+- Shortened setup, release, and cleanup documentation.
+
 ## [1.3.1] - 2026-10-16
 
 ### Fixed
@@ -135,7 +145,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated SOGo to 5.10.0.
 
-[Unreleased]: https://github.com/japoch/SOGo/compare/v1.3.0...main
+[Unreleased]: https://github.com/japoch/SOGo/compare/v1.3.2...main
+[1.3.2]: https://github.com/japoch/SOGo/compare/v1.3.1...v1.3.2
+[1.3.1]: https://github.com/japoch/SOGo/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/japoch/SOGo/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/japoch/SOGo/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/japoch/SOGo/compare/v1.0.0...v1.1.0

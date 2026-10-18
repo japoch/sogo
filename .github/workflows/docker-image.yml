@@ -34,7 +34,12 @@ on:
   workflow_dispatch:
     inputs:
       publish_image:
-        description: Publish the versioned image to GHCR
+        description: Publish the versioned image and update latest for stable versions
+        type: boolean
+        required: true
+        default: false
+      latest_only:
+        description: Update latest from the existing .env VERSION release without rebuilding (requires publish_image)
         type: boolean
         required: true
         default: false
@@ -59,6 +64,7 @@ env:
     with SOPE, NGINX and memcached. Supports AMD64, ARMv7 and ARM64;
     requires external database and mail services.
   PUBLISH_IMAGE: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_image) }}
+  LATEST_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.latest_only }}
   BUILD_PLATFORMS: ${{ github.event_name == 'pull_request' && 'linux/amd64' || inputs.build_platforms || 'linux/amd64,linux/arm/v7,linux/arm64' }}
 
 jobs:
@@ -90,6 +96,10 @@ jobs:
         id: version
         shell: bash
         run: |
+          if [[ "$LATEST_ONLY" == 'true' && "$PUBLISH_IMAGE" != 'true' ]]; then
+            echo '::error::latest_only requires publish_image: true.'
+            exit 1
+          fi
           version=$(sed -n 's/^VERSION=//p' .env | tr -d '\r')
           # Require a complete version that can be used unchanged as a Docker tag.
           if [[ ! "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]] || (( ${#version} > 128 )); then
@@ -105,7 +115,7 @@ jobs:
           echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
       - name: Check version ownership and existing image
-        if: env.PUBLISH_IMAGE == 'true'
+        if: env.PUBLISH_IMAGE == 'true' && env.LATEST_ONLY != 'true'
         id: prepare
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
@@ -125,6 +135,7 @@ jobs:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: index
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Promote latest separately, after verification, including reused images.
           flavor: latest=false
           tags: type=raw,value=${{ steps.version.outputs.version }}
           labels: |
@@ -137,11 +148,11 @@ jobs:
             org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/${{ steps.version.outputs.commit }}/README.md
 
       - name: Set up QEMU
-        if: steps.prepare.outputs.build != 'false' && env.BUILD_PLATFORMS != 'linux/amd64'
+        if: env.LATEST_ONLY != 'true' && steps.prepare.outputs.build != 'false' && env.BUILD_PLATFORMS != 'linux/amd64'
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
       - name: Set up Docker Buildx
-        if: steps.prepare.outputs.build != 'false'
+        if: env.PUBLISH_IMAGE == 'true' || steps.prepare.outputs.build != 'false'
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Login to the Container registry
@@ -153,7 +164,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker image
-        if: steps.prepare.outputs.build != 'false'
+        if: env.LATEST_ONLY != 'true' && steps.prepare.outputs.build != 'false'
         id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -170,7 +181,7 @@ jobs:
           cache-to: type=gha,scope=sogo,mode=max
 
       - name: Verify published manifest, platforms and labels
-        if: env.PUBLISH_IMAGE == 'true'
+        if: env.PUBLISH_IMAGE == 'true' && env.LATEST_ONLY != 'true'
         id: verify
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
@@ -184,12 +195,25 @@ jobs:
             await run({ github, context, core, env: process.env, mode: 'verify' });
 
       - name: Generate artifact attestation
-        if: env.PUBLISH_IMAGE == 'true' && github.event.repository.visibility == 'public'
+        if: env.PUBLISH_IMAGE == 'true' && env.LATEST_ONLY != 'true' && github.event.repository.visibility == 'public'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.verify.outputs.digest }}
           push-to-registry: true
+
+      - name: Update latest from the verified stable image
+        if: env.PUBLISH_IMAGE == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_COMMIT: ${{ steps.version.outputs.commit }}
+          EXPECTED_DIGEST: ${{ steps.verify.outputs.digest }}
+        with:
+          script: |
+            const { run } = require('./.github/scripts/release-image.cjs');
+            await run({ github, context, core, env: process.env, mode: 'latest' });
 
   release:
     if: github.event_name == 'push'
