@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.4] - 2026-11-17
+
 ### Changed
 
 - Updated SOGo and SOPE to 5.12.13.
@@ -159,7 +161,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated SOGo to 5.10.0.
 
-[Unreleased]: https://github.com/japoch/SOGo/compare/v1.3.3...main
+[Unreleased]: https://github.com/japoch/SOGo/compare/v1.3.4...main
+[1.3.4]: https://github.com/japoch/SOGo/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/japoch/SOGo/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/japoch/SOGo/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/japoch/SOGo/compare/v1.3.0...v1.3.1
