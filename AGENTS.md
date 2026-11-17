@@ -3,14 +3,14 @@
 ## Working style
 
 - Preserve local changes, including `.env` overrides. Inspect the branch and diff before editing; stage specific files.
-- Respond in the user's language; write documentation, comments, and commits in English. Keep changes scoped and consistent with existing style.
+- Respond in the user's language; write documentation, comments, and commits in English. Keep changes scoped and consistent.
 - Commit, push, merge, publish images, or delete packages only when authorized; do not ask again for existing authorization.
-- Use rebase merge or squash merge for linear history. Create merge commits only on explicit request.
+- Use rebase or squash merges; create merge commits only on explicit request.
 - Keep operational instructions in [README.md](README.md) and user-visible changes under `Unreleased` in [CHANGELOG.md](CHANGELOG.md). Move only released changes into version sections.
 
 ## Release shortcut
 
-Treat "Prepare release X.Y.Z" (or the equivalent in the user's language) as authorization to create or reuse `release/X.Y.Z`, include the agreed changes, update `.env` and dated changelog notes, run relevant checks, commit, push, and create or update a PR against `main`. Preserve unrelated local changes and report the PR link and CI status. Use the existing origin token for GitHub access without exposing it. Stop before merging unless requested; when authorized and required CI passes, use rebase merge (or squash if requested), then monitor publication and verify the release as described below.
+Treat "Prepare release X.Y.Z" (or the equivalent in the user's language) as authorization to create or reuse `release/X.Y.Z`, include the agreed changes, update `.env` and dated changelog notes, run relevant checks, commit, push, and create or update a PR against `main`. Preserve unrelated local changes and report the PR link and CI status. Stop before merging unless requested; when authorized and required CI passes, use rebase merge (or squash if requested), then monitor publication and verify the release as described below.
 
 ## Project map
 
@@ -29,7 +29,7 @@ This repository packages SOGo, not upstream application source.
 
 - Align `.env` and both `docker-image.yml` platform defaults: `linux/amd64,linux/arm/v7,linux/arm64`. ARM64 requires a 64-bit OS; `linux/arm/v8` is not ARM64.
 - Compose defaults database, mail and phpMyAdmin to AMD64 via `PLATFORM`. Verify their exact image tags before claiming whole-stack platform support.
-- Preserve mounts, health checks and dependency ordering. Never use `docker compose down -v` as a routine reset. Do not add `init: true` to LinuxServer MariaDB or phpMyAdmin: s6 must be PID 1.
+- Preserve mounts, health checks and dependency ordering; never routinely reset with `docker compose down -v`. LinuxServer MariaDB and phpMyAdmin require s6 as PID 1, so do not add `init: true`.
 - Publish the complete `.env` `VERSION`; Git release tags are `v<VERSION>`. Promote `latest` separately to the verified stable digest, including reused images; never downgrade it or use prereleases. No major/minor aliases.
 - Preserve path filters: documentation/Compose-only changes must not trigger image builds or version bumps unless explicitly requested. Tag pushes bypass filters.
 - PR builds test AMD64 without publishing. Manual runs default to `publish_image: false`; relevant `main` and matching release-tag pushes publish.
@@ -61,6 +61,6 @@ Run relevant checks from the repository root. Documentation-only edits need diff
 
 ## Credentials and local data
 
-- Use credentials only for authorized access to their intended services. Never expose or commit tokens, credential-bearing remote URLs, or expanded Compose configuration; use `config --quiet` or `--images`.
+- Use credentials only for authorized services; never expose or commit them or expanded Compose configuration. Use `config --quiet` or `--images`.
 - Exclude deployment data (`db-root/`, `phpmyadmin-root/`, `mail-root/`, `backup/`, certificates and volumes) from broad searches and commits unless explicitly in scope.
-- Check `.gitignore` and `.dockerignore` separately before broad `COPY` changes: credentials and runtime data must not enter images or uploaded build contexts.
+- Before broad `COPY` changes, check `.gitignore` and `.dockerignore` separately to keep credentials and runtime data out of images and build contexts.
