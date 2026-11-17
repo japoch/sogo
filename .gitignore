@@ -21,4 +21,4 @@ reverse-proxy/*
 .ghcr-token
 
 # Local GitHub token for workflow diagnostics
-.github-token
+.gh-token
