@@ -9,3 +9,9 @@ backup/
 node_modules/
 tmp/
 *.log
+
+# Local credentials
+.gh_token
+.ghcr_token
+.gh-token
+.ghcr-token

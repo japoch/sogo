@@ -18,7 +18,9 @@ images/*
 reverse-proxy/*
 
 # Local GitHub Container Registry token
+.ghcr_token
 .ghcr-token
 
 # Local GitHub token for workflow diagnostics
+.gh_token
 .gh-token

@@ -44,7 +44,6 @@ RUN apt-get update \
         libldap-2.5-0 \
         libcurl4 \
         libmariadb3 \
-        nginx \
         memcached \
         sudo \
         procps \
@@ -54,8 +53,6 @@ COPY sogo-conf/sogo.conf /etc/sogo/
 COPY artifacts/sogo-backup.sh /usr/local/share/doc/sogo/
 COPY artifacts/sogo.cron /etc/cron.d/
 COPY artifacts/sogod.sh /usr/local/bin/
-COPY nginx-conf/sites-enabled/sogo-nginx.conf /etc/nginx/sites-enabled/
-RUN rm /etc/nginx/sites-enabled/default
 
 RUN echo -e "# SOGo libraries\n/usr/local/lib/sogo" > /etc/ld.so.conf.d/sogo.conf \
     && ldconfig --verbose
@@ -63,7 +60,7 @@ RUN groupadd -f -r sogo \
     && useradd -d /var/lib/sogo -g sogo -c "SOGo daemon" -s /usr/sbin/nologin -r -g sogo sogo \
     && for dir in lib log run spool; do install -m 750 -o sogo -g sogo -d /var/$dir/sogo; done
 
-EXPOSE 80 443 20000
+EXPOSE 20000
 WORKDIR /var/lib/sogo
 USER root
 ENTRYPOINT ["/usr/local/bin/sogod.sh"]
