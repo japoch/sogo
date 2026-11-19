@@ -13,5 +13,3 @@ tmp/
 # Local credentials
 .gh_token
 .ghcr_token
-.gh-token
-.ghcr-token
