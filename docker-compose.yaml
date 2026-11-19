@@ -2,11 +2,9 @@ services:
   sogo:
     image: ghcr.io/japoch/sogo:${VERSION:-main}
     init: true
-    ports:
-      - "${PORT_SOGO_HTTP:-8080}:80"
     volumes:
       - ./sogo-conf:/etc/sogo:ro
-      - ./nginx-conf/sites-enabled:/etc/nginx/sites-enabled:ro
+      - sogo-resources:/var/lib/sogo-web-resources
       - ./backup:/mnt/backup
     restart: unless-stopped
     depends_on:
@@ -19,6 +17,18 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  nginx:
+    image: nginx:1.30.7
+    ports:
+      - "${PORT_SOGO_HTTP:-8080}:80"
+    volumes:
+      - ./nginx-conf/sites-enabled/sogo-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - sogo-resources:/usr/local/lib/GNUstep/SOGo:ro
+    depends_on:
+      sogo:
+        condition: service_started
+    restart: unless-stopped
 
   db:
     image: linuxserver/mariadb:11.4.5
@@ -100,6 +110,7 @@ services:
         max-file: "3"
 
 volumes:
+  sogo-resources:
   inbox:
   spool:
   webmail:

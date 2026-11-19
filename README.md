@@ -4,7 +4,7 @@
 [![Codacy Security Scan](https://github.com/japoch/SOGo/actions/workflows/codacy.yml/badge.svg)](https://github.com/japoch/SOGo/actions/workflows/codacy.yml)
 [![CodeQL Advanced](https://github.com/japoch/sogo/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/japoch/sogo/actions/workflows/codeql.yml)
 
-[SOGo](http://www.sogo.nu) is an open-source groupware server (GNU GPL/LGPL v2+). This [GHCR image](https://github.com/japoch/sogo/pkgs/container/sogo) builds [SOGo](https://github.com/Alinto/sogo) and [SOPE](https://github.com/Alinto/sope) from source with NGINX and memcached.
+[SOGo](http://www.sogo.nu) is an open-source groupware server (GNU GPL/LGPL v2+). This [GHCR image](https://github.com/japoch/sogo/pkgs/container/sogo) builds [SOGo](https://github.com/Alinto/sogo) and [SOPE](https://github.com/Alinto/sope) from source with memcached.
 
 ## Platforms
 
@@ -42,7 +42,7 @@ journalctl -u sogo-docker.service -f
 ### Configuration
 
 - **Database and mail:** Configure `sogo-conf/sogo.conf` using SOGo's database, MTA, and SMTP authentication documentation.
-- **NGINX and HTTPS:** Edit `artifacts/nginx.conf` and `nginx-conf/sites-enabled/sogo-nginx.conf`; provide certificates in the container. Exposed ports: 80, 443, and 20000 (SOGo).
+- **NGINX and HTTPS:** Edit `nginx-conf/sites-enabled/sogo-nginx.conf`. Compose publishes NGINX on `PORT_SOGO_HTTP`; configure TLS, certificate mounts, and an HTTPS port if needed. SOGo listens on port 20000 inside the Compose network. The shared `sogo-resources` volume is refreshed when SOGo starts.
 - **Workers:** Size `WOWorkersCount` in `sogo.conf` for your workload.
 - **Cron:** Edit `artifacts/sogo.cron` for backups, session cleanup, and Sieve. Uncomment the backup job and rebuild to enable scheduled backups.
 
@@ -94,10 +94,10 @@ Test publishing safeguards: `node --test .github/scripts/test_release_image.cjs 
 
 ### Publish locally
 
-Save a classic PAT with `write:packages` in the ignored `.ghcr-token` file ([GHCR authentication](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry)). Replace `GITHUB_USERNAME` and run in Bash:
+Save a classic PAT with `write:packages` in the ignored `.ghcr_token` file ([GHCR authentication](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry)). Replace `GITHUB_USERNAME` and run in Bash:
 
 ```bash
-docker login ghcr.io --username GITHUB_USERNAME --password-stdin < .ghcr-token
+docker login ghcr.io --username GITHUB_USERNAME --password-stdin < .ghcr_token
 source .env
 docker buildx create --name sogo-builder --driver docker-container --use # once
 docker buildx build --platform "$BUILD_PLATFORMS" -t "ghcr.io/japoch/sogo:$VERSION" --push .
